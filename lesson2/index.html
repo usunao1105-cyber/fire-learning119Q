@@ -1,0 +1,315 @@
+lesson2/index.html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多言語 災害時誘導アナウンスツール</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Preparedness (#FAF8F5 Warm Neutral, #333D45 Dark Slate, #4A7C59 Muted Green, #D9A443 Muted Gold) -->
+    <!-- Application Structure Plan: 単一ページのグリッドレイアウト。上部に主要機能である「全言語連続再生」ボタンを大きく配置し、その下に個別再生ボタンを並べることで、緊急時の操作優先度を明確にした。ワンクリックで最も重要な機能が作動するUIは、指揮官の負担を軽減する。 -->
+    <!-- Visualization & Content Choices: 
+        - 報告書情報: 「歩ける人はこちらへ」の多言語メッセージ → 目的: 連続音声再生 → ビジュアライゼーション: 大きな再生/停止ボタンとステータス表示エリアを追加 → インタラクション: クリックで全言語の音声を5回ループ再生、再クリックで停止 → 理由: 現場で一度操作すれば、あとは車両スピーカーでの拡声に集中できるよう、ハンズフリーに近い運用を実現するため。再生状況のフィードバックも提供し、確実な操作を支援する。 -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #FAF8F5;
+            color: #333D45;
+        }
+        .btn-play.loading, #play-all-btn.loading {
+            background-color: #D9A443;
+            cursor: wait;
+        }
+        .btn-play.playing, #play-all-btn.playing {
+            background-color: #d32f2f; /* Red for Stop/Playing */
+            color: white;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="container mx-auto px-4 py-4 text-center">
+            <h1 class="text-2xl md:text-3xl font-bold text-[#333D45]">多言語 災害時誘導アナウンスツール</h1>
+            <p class="text-md text-gray-600 mt-1">アジア競技大会2026 岡崎会場 災害対応</p>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-bold mb-3 text-center">一斉アナウンス</h2>
+            <p class="text-center text-gray-600 mb-4">下のボタンを押すと、全ての言語のアナウンスが5回連続で再生されます。再生中に再度ボタンを押すと停止します。</p>
+            <button id="play-all-btn" class="w-full bg-[#D9A443] text-white font-bold py-4 px-4 rounded-lg hover:bg-[#c8943a] transition-colors flex items-center justify-center text-xl shadow-lg">
+                <span class="play-icon">▶</span>
+                <span class="button-text ml-3">全言語 連続再生 (5回)</span>
+            </button>
+            <div id="play-all-status" class="mt-4 text-center text-gray-700 font-semibold h-6"></div>
+        </div>
+
+        <div class="max-w-4xl mx-auto border-t pt-8">
+             <h2 class="text-xl font-bold mb-4 text-center">個別アナウンス</h2>
+             <p class="text-center text-gray-600 mb-6">言語を選択して個別に再生することも可能です。</p>
+             <div id="audio-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+             </div>
+        </div>
+    </main>
+
+    <footer class="bg-[#333D45] text-white mt-8">
+        <div class="container mx-auto px-4 py-4 text-center text-sm">
+            <p>緊急時の円滑な避難誘導のために</p>
+        </div>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const audioGrid = document.getElementById('audio-grid');
+        const playAllBtn = document.getElementById('play-all-btn');
+        const playAllStatus = document.getElementById('play-all-status');
+
+        let currentlyPlaying = null;
+        let isSequencePlaying = false;
+        let currentLanguageIndex = 0;
+        let currentLoopCount = 1;
+        const MAX_LOOPS = 5;
+        let audioQueue = [];
+
+        const languages = [
+            { lang: 'ja-JP', displayNameJP: '日本語', displayNameNative: '日本語', flag: '🇯🇵', text: '歩ける方は、こちらへ来てください。落ち着いて移動してください。' },
+            { lang: 'en-US', displayNameJP: '英語', displayNameNative: 'English', flag: '🇺🇸', text: 'If you are able to walk, please come this way. Please move calmly.' },
+            { lang: 'zh-CN', displayNameJP: '中国語 (簡体)', displayNameNative: '简体中文', flag: '🇨🇳', text: '如果您可以行走，请到这边来。请冷静移动。' },
+            { lang: 'ko-KR', displayNameJP: '韓国語', displayNameNative: '한국어', flag: '🇰🇷', text: '걸을 수 있는 분은 이쪽으로 오세요. 침착하게 이동해 주세요.' },
+            { lang: 'hi-IN', displayNameJP: 'ヒンディー語', displayNameNative: 'हिन्दी', flag: '🇮🇳', text: 'यदि आप चल सकते हैं, तो कृपया इस तरफ आएं। कृपया शांति से आगे बढ़ें।' },
+            { lang: 'id-ID', displayNameJP: 'インドネシア語', displayNameNative: 'Bahasa Indonesia', flag: '🇮🇩', text: 'Jika Anda bisa berjalan, silakan datang ke sini. Harap bergerak dengan tenang.' },
+            { lang: 'vi-VN', displayNameJP: 'ベトナム語', displayNameNative: 'Tiếng Việt', flag: '🇻🇳', text: 'Nếu quý vị có thể đi lại được, xin mời đi lối này. Vui lòng di chuyển bình tĩnh.'},
+            { lang: 'th-TH', displayNameJP: 'タイ語', displayNameNative: 'ภาษาไทย', flag: '🇹🇭', text: 'หากท่านสามารถเดินได้ โปรดมาทางนี้ กรุณาเคลื่อนที่อย่างใจเย็น'}
+        ];
+
+        languages.forEach(lang => {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-4 rounded-lg shadow-md flex flex-col justify-between';
+            card.innerHTML = `
+                <div>
+                    <div class="flex items-center mb-3">
+                        <span class="text-3xl mr-3">${lang.flag}</span>
+                        <div>
+                            <h3 class="text-xl font-bold">${lang.displayNameNative}</h3>
+                            <p class="text-sm text-gray-500">${lang.displayNameJP}</p>
+                        </div>
+                    </div>
+                </div>
+                <button data-text="${lang.text}" class="btn-play w-full mt-4 bg-[#4A7C59] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#3e664b] transition-colors flex items-center justify-center text-xl">
+                    <span class="play-icon">▶</span>
+                    <span class="button-text ml-2">再生</span>
+                </button>
+            `;
+            audioGrid.appendChild(card);
+        });
+        
+        // Individual play logic
+        audioGrid.addEventListener('click', async (e) => {
+            const button = e.target.closest('.btn-play');
+            if (!button || button.classList.contains('loading') || button.classList.contains('playing') || isSequencePlaying) return;
+
+            if (currentlyPlaying) {
+                currentlyPlaying.pause();
+                currentlyPlaying.currentTime = 0;
+            }
+
+            const textToSpeak = button.dataset.text;
+            setButtonState(button, 'loading');
+
+            try {
+                const audioUrl = await generateAndGetAudioUrl(textToSpeak);
+                if (audioUrl) playAudio(audioUrl, button);
+                else throw new Error('Audio URL not created.');
+            } catch (error) {
+                console.error('Error generating or playing audio:', error);
+                setButtonState(button, 'default');
+            }
+        });
+
+        // Sequential play logic
+        playAllBtn.addEventListener('click', () => {
+            if (isSequencePlaying) {
+                stopSequentialPlayback();
+            } else {
+                startSequentialPlayback();
+            }
+        });
+
+        async function startSequentialPlayback() {
+            isSequencePlaying = true;
+            setPlayAllButtonState('loading');
+            playAllStatus.textContent = '音声データを生成中... しばらくお待ちください。';
+
+            try {
+                const promises = languages.map(lang => generateAndGetAudioUrl(lang.text));
+                audioQueue = await Promise.all(promises);
+                
+                currentLanguageIndex = 0;
+                currentLoopCount = 1;
+                playNextInSequence();
+
+            } catch (error) {
+                console.error("Error pre-generating audio:", error);
+                playAllStatus.textContent = "音声の生成に失敗しました。";
+                stopSequentialPlayback();
+            }
+        }
+        
+        function playNextInSequence() {
+            if (!isSequencePlaying) return;
+
+            if (currentLanguageIndex >= languages.length) {
+                currentLoopCount++;
+                if (currentLoopCount > MAX_LOOPS) {
+                    stopSequentialPlayback();
+                    return;
+                }
+                currentLanguageIndex = 0;
+            }
+
+            const lang = languages[currentLanguageIndex];
+            const audioUrl = audioQueue[currentLanguageIndex];
+            
+            playAllStatus.textContent = `再生中: ${lang.displayNameNative} (ループ: ${currentLoopCount}/${MAX_LOOPS})`;
+            setPlayAllButtonState('playing');
+
+            currentlyPlaying = new Audio(audioUrl);
+            currentlyPlaying.play();
+            currentlyPlaying.onended = () => {
+                currentLanguageIndex++;
+                playNextInSequence();
+            };
+            currentlyPlaying.onerror = () => {
+                 console.error(`Error playing audio for ${lang.displayNameNative}`);
+                 currentLanguageIndex++;
+                 playNextInSequence(); // Skip to the next one on error
+            }
+        }
+
+        function stopSequentialPlayback() {
+            isSequencePlaying = false;
+            if (currentlyPlaying) {
+                currentlyPlaying.pause();
+                currentlyPlaying = null;
+            }
+            audioQueue.forEach(url => URL.revokeObjectURL(url));
+            audioQueue = [];
+            playAllStatus.textContent = '';
+            setPlayAllButtonState('default');
+        }
+
+        function setPlayAllButtonState(state) {
+            const icon = playAllBtn.querySelector('.play-icon');
+            const text = playAllBtn.querySelector('.button-text');
+            playAllBtn.classList.remove('loading', 'playing');
+
+            if (state === 'loading') {
+                playAllBtn.classList.add('loading');
+                text.textContent = '生成中...';
+            } else if (state === 'playing') {
+                playAllBtn.classList.add('playing');
+                icon.textContent = '■';
+                text.textContent = '停止';
+            } else { // default
+                icon.textContent = '▶';
+                text.textContent = '全言語 連続再生 (5回)';
+            }
+        }
+
+        function setButtonState(button, state) {
+            const playIcon = button.querySelector('.play-icon');
+            button.classList.remove('loading', 'playing');
+
+            if (state === 'loading') {
+                button.classList.add('loading');
+            } else if (state === 'playing') {
+                button.classList.add('playing');
+                playIcon.textContent = '■';
+            } else { // default
+                playIcon.textContent = '▶';
+            }
+        }
+
+        function playAudio(url, button) {
+             currentlyPlaying = new Audio(url);
+             setButtonState(button, 'playing');
+             currentlyPlaying.play();
+             currentlyPlaying.onended = () => {
+                setButtonState(button, 'default');
+                URL.revokeObjectURL(url);
+                currentlyPlaying = null;
+             };
+             currentlyPlaying.onerror = () => {
+                setButtonState(button, 'default');
+                URL.revokeObjectURL(url);
+             }
+        }
+        
+        async function generateAndGetAudioUrl(text) {
+             const apiKey = "";
+             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+             const payload = {
+                contents: [{ parts: [{ text: text }] }],
+                generationConfig: { responseModalities: ["AUDIO"] },
+                model: "gemini-2.5-flash-preview-tts"
+             };
+             const response = await fetch(apiUrl, {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify(payload)
+             });
+             if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+             const result = await response.json();
+             const audioData = result?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+             const mimeType = result?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.mimeType;
+
+             if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
+                const pcmData = base64ToArrayBuffer(audioData);
+                const pcm16 = new Int16Array(pcmData);
+                const wavBlob = pcmToWav(pcm16, 1, sampleRate);
+                return URL.createObjectURL(wavBlob);
+             }
+             return null;
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcmData, numChannels, sampleRate) {
+            const buffer = new ArrayBuffer(44 + pcmData.length * 2);
+            const view = new DataView(buffer);
+            const writeString = (view, offset, string) => {
+                for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+            };
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + pcmData.length * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * numChannels * 2, true);
+            view.setUint16(32, numChannels * 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, pcmData.length * 2, true);
+            for (let i = 0; i < pcmData.length; i++) view.setInt16(44 + i * 2, pcmData[i], true);
+            return new Blob([view], { type: 'audio/wav' });
+        }
+    });
+    </script>
+</body>
+</html>
+
