@@ -1,0 +1,411 @@
+lesson4/index.html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>救急医療の現場がわかる！重要用語をやさしく解説（アジアパラ大会対応版）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', 'Inter', sans-serif;
+        }
+        .section-title {
+            border-left: 5px solid #1d4ed8; /* blue-700 */
+            padding-left: 1rem;
+        }
+        .term-card {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb; /* gray-200 */
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .term-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .term-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e3a8a; /* blue-800 */
+            margin-bottom: 0.75rem;
+        }
+        .list-item::before {
+            content: '✓';
+            color: #1d4ed8; /* blue-700 */
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
+        }
+        .example-box {
+            background-color: #f3f4f6; /* gray-100 */
+            border-left: 4px solid #f59e0b; /* amber-500 */
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0.375rem;
+        }
+        /* For QA Section */
+        .qa-item summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background-color: #eef2ff; /* indigo-50 */
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: #312e81; /* indigo-900 */
+        }
+        .qa-item summary:hover {
+            background-color: #e0e7ff; /* indigo-100 */
+        }
+        .qa-item summary::after {
+            content: '＋';
+            font-size: 1.5rem;
+            transition: transform 0.2s;
+        }
+        .qa-item[open] summary::after {
+            transform: rotate(45deg);
+        }
+        .qa-answer {
+            padding: 1rem;
+            background-color: #fafafa; /* gray-50 */
+            border: 1px solid #e5e7eb; /* gray-200 */
+            border-top: none;
+            border-radius: 0 0 0.5rem 0.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-blue-700 text-white p-6 shadow-md">
+        <div class="container mx-auto max-w-4xl text-center">
+            <h1 class="text-3xl md:text-4xl font-bold">救急医療の現場がわかる！</h1>
+            <p class="text-xl mt-2">重要用語をやさしく解説（アジアパラ大会対応版）</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto max-w-4xl p-4 md:p-8">
+
+        <!-- Introduction -->
+        <section class="mb-12">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-2xl font-bold text-blue-800 mb-4">はじめに</h2>
+                <p class="mb-4">この資料は、救急医療の現場で日常的に使われる専門用語を、将来医療の道を志す学生やテーマに関心のある一般の方々にも分かりやすく解説することを目的としています。特に、<strong>2026年に開催されるアジアパラ競技大会</strong>のような大規模イベントにおける集団災害対応の教育資料として活用されることを想定しています。</p>
+                <p>この解説を読めば、ニュースやドキュメンタリーで耳にする言葉が、単なる単語ではなく、一つの大きなシステムを構成する要素として、より深く理解できるようになるでしょう。</p>
+            </div>
+        </section>
+
+        <!-- Part 1: Structure -->
+        <section class="mb-12">
+            <h2 class="text-2xl md:text-3xl font-bold mb-6 section-title">第1部：救急医療の「仕組み」に関する用語</h2>
+            <p class="mb-8 text-gray-600">119番通報の向こう側には、個人の英雄的行為だけでなく、地域全体で命を支えるための緻密な「ルール」と「体制」が存在します。まずはその骨格を見ていきましょう。</p>
+
+            <!-- Term 1.1 (Updated) -->
+            <div class="term-card">
+                <h3 class="term-title">1. 傷病者の搬送及び受入れの実施に関する基準（実施基準）</h3>
+                <p class="mb-4">これは<strong class="text-blue-700">「傷病者を迅速かつ適切に病院へ搬送するための、都道府県が定める統一ルール」</strong>です。このルールの最大の目的は、傷病者の生命の危機を回避し、後遺症をできる限り軽くすることにあります。</p>
+                <div class="bg-blue-50 p-4 rounded-lg mt-4">
+                    <h4 class="font-bold text-blue-800 mb-2">【拡充】搬送基準のポイント</h4>
+                    <p class="mb-2">実施基準における搬送は、平時と災害時で運用が異なります。特に集団災害発生時は、限られた医療資源を最大限有効に活用するため、より戦略的な判断が求められます。</p>
+                    <ul class="space-y-2 pl-5 list-disc">
+                        <li><strong>病院選定の原則:</strong> 救急隊は、傷病者の状態と緊急度、そして各医療機関の受入能力（専門性、手術室の空き状況など）を総合的に判断し、最適な病院を選定します。</li>
+                        <li><strong>災害時の運用:</strong> 大規模災害や事故（集団災害）発生時には、現場に設置される災害対策本部や地域の調整機関が搬送先を調整します。これは「病院の集中による機能不全」を防ぎ、より多くの命を救うためです。トリアージの結果に基づき、重症度に応じて適切な機能を持つ医療機関へ分散して搬送する体制が取られます。</li>
+                        <li><strong>情報連携の重要性:</strong> 救急隊、医療機関、消防機関、行政が常に情報を共有し、連携することが不可欠です。近年は、救急活動のDX化により、この情報連携の迅速化・正確化が進められています。</li>
+                    </ul>
+                </div>
+                <p class="mt-4 mb-4">この基準には、主に以下の3つの要素が含まれています。</p>
+                <ul class="space-y-3 pl-5">
+                    <li class="list-item"><strong class="font-semibold">分類基準:</strong> 特に重症度や緊急度が高い傷病者（心肺停止、脳卒中の疑い、重い外傷など）を対象とし、迅速な対応が必要なケースを明確にします。</li>
+                    <li class="list-item"><strong class="font-semibold">医療機関リスト:</strong> 傷病の種類ごとに、救急隊が搬送先の候補として連絡する病院をリスト化したものです。</li>
+                    <li class="list-item"><strong class="font-semibold">各種基準（観察・選定・伝達）:</strong> 救急隊員が現場で状態を把握し（観察基準）、最適な病院を選び（選定基準）、病院に情報を的確に伝える（伝達基準）ための具体的な手順です。</li>
+                </ul>
+            </div>
+
+            <!-- Term 1.2 -->
+            <div class="term-card">
+                 <h3 class="term-title">2. メディカルコントロール（MC）</h3>
+                 <p class="mb-4">メディカルコントロール（MC）とは、<strong class="text-blue-700">「救急救命士が行う医療行為の質を、医学的な観点から保証するための体制」</strong>のことです。住民が安心して救急車を呼べるようにするために不可欠です。</p>
+                 <div class="example-box">
+                     <p class="font-semibold text-gray-700">【事例】なぜ「医師の具体的な指示」が絶対なのか</p>
+                     <p class="text-sm mt-2">2021年に愛知県内のある市で、救急隊員が現場の看護師に「医師の具体的な指示」なく静脈路確保を指示し、懲戒処分となる事例がありました。たとえ善意で命が救われたとしても、一人の逸脱した判断が、地域全体の救急業務への信頼を揺らがし、システムそのものを危うくする可能性があることを示しています。</p>
+                 </div>
+                 <p class="mt-4 mb-4">メディカルコントロール体制は、主に以下の4つの要素で構成されています。</p>
+                 <ul class="space-y-3 pl-5">
+                     <li class="list-item"><strong class="font-semibold">常時指示体制:</strong> 現場の救急救命士が、無線や電話で医師からリアルタイムで指示や助言を受ける仕組みです。</li>
+                     <li class="list-item"><strong class="font-semibold">事後検証体制:</strong> 救急活動終了後、その内容が医学的に正しかったかを医師が検証・評価する仕組みです。</li>
+                     <li class="list-item"><strong class="font-semibold">再教育体制:</strong> 事後検証で見つかった課題を基に、救急隊員の知識や技術を向上させるための研修や教育です。</li>
+                     <li class="list-item"><strong class="font-semibold">プロトコールの作成:</strong> 特定の状況で救急隊員が行うべき活動手順をまとめた「手順書（プロトコール）」を作成・整備することです。</li>
+                 </ul>
+             </div>
+
+            <!-- Term 1.3 -->
+             <div class="term-card">
+                 <h3 class="term-title">3. 地区メディカルコントロール（MC）協議会</h3>
+                 <p class="mb-4">これは、<strong class="text-blue-700">「地域ごとに救急医療機関と消防機関などが集まり、メディカルコントロールを具体的に運用するための話し合いを行う組織」</strong>です。愛知県内には7つのブロックに分かれて設置されています。</p>
+                 <p class="mb-4">この協議会は、主に2つの重要な役割を担っています。</p>
+                 <ul class="space-y-3 pl-5">
+                     <li class="list-item"><strong class="font-semibold">救急救命士への指示体制の整備:</strong> 現場の救急救命士に指示を出す医師や病院など、具体的なルールを地域ごとに定めます。</li>
+                     <li class="list-item"><strong class="font-semibold">地域の事情に合わせたルールの調整:</strong> 「人生の最終段階にある傷病者への対応」など、地域全体で統一した見解を持つべきテーマについて議論し、活動方針を調整します。</li>
+                 </ul>
+             </div>
+             <p class="mt-8 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg"><strong>第1部のまとめ:</strong> ここまで、救急医療を支える大きな「ルール」や「体制」について見てきました。次の第2部では、実際に119番通報があってから病院に搬送されるまでの流れの中で使われる、より具体的な用語を解説します。</p>
+        </section>
+
+        <!-- Part 2: Flow (No changes) -->
+        <section class="mb-12">
+            <h2 class="text-2xl md:text-3xl font-bold mb-6 section-title">第2部：通報から搬送までの「流れ」に関する用語</h2>
+             <p class="mb-8 text-gray-600">通報の電話が鳴ってから、救急車が病院の玄関に着くまで。そのわずかな時間の中で、救急隊はどのような判断を下しているのでしょうか。ここでは、その「流れ」を司る重要なキーワードを解き明かします。</p>
+
+            <!-- Term 2.1 -->
+            <div class="term-card">
+                <h3 class="term-title">1. トリアージ</h3>
+                <p class="mb-4">トリアージとは、<strong class="text-blue-700">「傷病者の重症度や緊急性を判断し、治療の優先順位を決めること」</strong>です。災害時だけでなく、日常の救急業務でも重要な役割を果たします。</p>
+                <p class="mb-4">特に「119番通報受信時トリアージ」は、通報内容から緊急性を迅速に判断し、以下の対応を可能にします。</p>
+                <ul class="space-y-3 pl-5">
+                    <li class="list-item">重症度に応じた最適な救急隊の出動体制を整える。</li>
+                    <li class="list-item">必要に応じて、救急隊の到着前から受け入れ医療機関の確保を開始する。</li>
+                </ul>
+            </div>
+
+            <!-- Term 2.2 -->
+            <div class="term-card">
+                <h3 class="term-title">2. プロトコール</h3>
+                <p class="mb-4">プロトコールとは、<strong class="text-blue-700">「ある特定の状況において、決められた手順やルールをまとめた『手順書』」</strong>のことです。救急現場では様々なプロトコールが整備されています。</p>
+                <p class="mb-4">プロトコールが重要な理由は、主に2つあります。</p>
+                <ul class="space-y-3 pl-5">
+                    <li class="list-item"><strong class="font-semibold">迅速で確実な判断:</strong> 緊急時でも、誰が対応しても一定水準の正しい判断と処置が迅速に行えます。</li>
+                    <li class="list-item"><strong class="font-semibold">活動の標準化:</strong> 消防本部ごとで対応がバラバラになることを防ぎ、救急業務全体の質を高度化・標準化します。</li>
+                </ul>
+            </div>
+
+            <!-- Term 2.3 -->
+            <div class="term-card">
+                <h3 class="term-title">3. 救急救命士</h3>
+                <p class="mb-4">救急救命士とは、<strong class="text-blue-700">「医師の指示のもとで、救急車内などで高度な救命処置を行うことができる国家資格を持つ専門家」</strong>です。</p>
+                <p class="mb-4">2014年の法改正により、これまで心肺停止後に限られていた一部の処置が、<strong class="text-red-600">「心肺機能が停止する前」</strong>の重篤な傷病者にも行えるようになり、処置範囲が大きく拡大されました。</p>
+                <p class="mb-4">新たに可能になった重要な処置は以下の2つです。</p>
+                <ul class="space-y-3 pl-5">
+                    <li class="list-item"><strong class="font-semibold">心肺機能停止前の静脈路確保と輸液:</strong> ショック状態の傷病者への点滴。心停止に至るのを防ぎます。</li>
+                    <li class="list-item"><strong class="font-semibold">血糖測定と低血糖発作症例へのブドウ糖溶液の投与:</strong> 意識障害がある傷病者の血糖値を測定し、低血糖であればブドウ糖溶液を投与します。</li>
+                </ul>
+            </div>
+             <p class="mt-8 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg"><strong>第2部のまとめ:</strong> 実際の救急活動の流れに沿った用語を見てきました。救急隊はこれらの手順や資格に基づいて活動しています。最後の第3部では、現場で使われる具体的な処置や、未来の救急活動を変える新しい技術に関する用語を紹介します。</p>
+        </section>
+
+        <!-- Part 3: Procedures & Technology (No changes) -->
+        <section class="mb-12">
+            <h2 class="text-2xl md:text-3xl font-bold mb-6 section-title">第3部：具体的な「処置」と「技術」に関する用語</h2>
+            <p class="mb-8 text-gray-600">現場の最前線では、どのような「処置」が行われ、未来の救急活動はどのような「技術」に支えられていくのでしょうか。ここでは、救命率を左右する具体的なアクションと、それを支える体制やテクノロジーを見ていきます。</p>
+
+            <!-- Term 3.1 -->
+            <div class="term-card">
+                <h3 class="term-title">1. 静脈路確保（点滴）</h3>
+                <p class="mb-4">静脈路確保とは、<strong class="text-blue-700">「治療に必要な薬剤を投与するために、静脈に針を刺して点滴ができる状態にすること」</strong>です。一般的には「点滴」として知られています。</p>
+                <p>この処置は、薬剤を最も迅速かつ確実に体内に届けるための「命のルート」を作る行為であり、その成否が救命効果を大きく左右します。心停止前のショック状態の患者にも可能になったことで、病院到着前から治療を開始でき、救命率の向上が期待されています。</p>
+            </div>
+
+            <!-- Term 3.2 -->
+            <div class="term-card">
+                <h3 class="term-title">2. 愛知県重症外傷センター</h3>
+                <p class="mb-4">これは、<strong class="text-blue-700">「交通外傷や転落など、生命に危険が及ぶほどの重い外傷を負った患者を専門的に受け入れる、高度な機能を持つ救命救急センター」</strong>です。</p>
+                <p class="mb-4">センターとして指定されるには厳しい基準があり、特に重要な基準は以下の2点です。</p>
+                <ul class="space-y-3 pl-5">
+                    <li class="list-item"><strong class="font-semibold">専門医の配置:</strong> 日本外傷学会認定の外傷専門医などが常勤していること。</li>
+                    <li class="list-item"><strong class="font-semibold">24時間体制:</strong> 医師が24時間院内に常駐し、治療方針決定から30分以内に緊急手術などを開始できる体制が整っていること。</li>
+                </ul>
+            </div>
+
+            <!-- Term 3.3 -->
+            <div class="term-card">
+                <h3 class="term-title">3. 救急活動のDX（デジタル・トランスフォーメーション）</h3>
+                <p class="mb-4">救急活動のDXとは、<strong class="text-blue-700">「ICT（情報通信技術）を活用し、救急隊と病院の情報伝達をデジタル化・効率化する取り組み」</strong>を指します。</p>
+                <div class="grid md:grid-cols-2 gap-6 mt-4">
+                    <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                        <h4 class="font-bold text-red-700 mb-2">従来の課題</h4>
+                        <ul class="list-disc list-inside text-sm space-y-1">
+                            <li><strong>情報伝達:</strong> 電話による口頭伝達が主で、聞き間違いのリスクがあった。</li>
+                            <li><strong>事務作業:</strong> 手書き記録とシステムへの再入力で二度手間が発生していた。</li>
+                        </ul>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <h4 class="font-bold text-green-700 mb-2">DXによる効果</h4>
+                        <ul class="list-disc list-inside text-sm space-y-1">
+                            <li><strong>時間短縮:</strong> 音声入力やOCR機能で記録作成を短縮し、処置開始を迅速化。</li>
+                            <li><strong>情報正確化:</strong> データ（心電図波形、写真など）共有で伝達ミスをなくす。</li>
+                            <li><strong>事務負担軽減:</strong> 現場入力データが自動連携され、報告書作成の手間を削減。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- NEW Part 4: Q&A Section -->
+        <section class="mb-12">
+            <h2 class="text-2xl md:text-3xl font-bold mb-6 section-title">第4部：新人救急隊員・消防隊員向けQ&A</h2>
+            <p class="mb-8 text-gray-600">ここでは、現場活動で抱きやすい疑問について、Q&A形式で解説します。アジアパラ競技大会のような国際的な大規模イベントでの活動も想定した内容を含みます。</p>
+            <div class="space-y-4">
+                <details class="qa-item group">
+                    <summary>Q1: 大規模災害時、実施基準の医療機関リスト外の病院へ搬送することは？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> あり得ます。大規模災害時には、リストに掲載されていない病院や隣県の病院、あるいは臨時の医療施設へ搬送することもあります。これは、多数の傷病者に対応するために、地域全体の医療資源を最大限活用するためであり、現場の指揮本部や調整センターの指示に基づいて行われます。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q2: MC協議会は、なぜ地域ごとに分かれているのですか？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 地域の医療資源（病院の数や専門性、医師の数）や地理的な条件（都市部か山間部かなど）が異なるためです。各地域の実情に合わせた、より現実的で効果的なメディカルコントロール体制を構築するために、ブロックごとに協議会が設置されています。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q3: なぜプロトコールは絶対なのですか？自己判断ではダメですか？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> プロトコールは、多くの医学的知見と経験に基づいて作られた「最善の手順書」です。緊急時でも、隊員個人の経験や判断のばらつきをなくし、誰が対応しても質の高い活動を保証するために不可欠です。自己判断による逸脱は、結果的に傷病者の不利益につながる可能性があり、許されません。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q4: パラアスリートのトリアージで特別に考慮すべき点は？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 基礎疾患や障がいの特性を理解することが重要です。例えば、脊髄損傷のある選手は自律神経の反応が通常と異なる場合があり、バイタルサインの解釈に注意が必要です。また、装着している義肢や装具が損傷している可能性も考慮し、全身を注意深く観察する必要があります。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q5: 外国語しか話せない傷病者への対応はどうすれば？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> まずは、翻訳アプリや図を指し示すなどのコミュニケーションツールを活用します。アジアパラ競技大会のようなイベントでは、多言語対応可能なスタッフやボランティアが配置されるため、連携を求めます。重要なのは、言葉が通じなくても、傷病者に寄り添い、安心感を与える姿勢です。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q6: 心肺停止前の静脈路確保を行うかどうかの判断基準は？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> プロトコールに基づき、ショック状態（血圧の著しい低下、頻脈、蒼白な顔色など）が明確な場合に適応となります。重症外傷やアナフィキシーなど、急激な循環不全が予測される病態が主な対象です。あくまで医師の具体的指示、またはプロトコールに定められた範囲内で行われます。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q7: 救急活動のDX化は、多言語対応でどう役立ちますか？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 例えば、タブレット端末に多言語対応の問診アプリを導入すれば、主要な症状やアレルギーの有無などを、言語の壁を越えて正確に聴取できます。また、翻訳機能を使えば、病院への情報伝達もスムーズになります。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q8: 重症外傷センターと通常の救命救急センターの違いは？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 最も大きな違いは「外傷診療への特化」です。重症外傷センターは、外傷専門医が常駐し、多発外傷など極めて重篤なケースに対して、診断から手術、集中治療までを迅速かつ包括的に行う体制が整っています。いわば「外傷のスペシャリスト集団」です。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q9: 現場で看護師から医療行為を依頼されたら？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 救急救命士は医師の指示に基づいて活動するため、たとえ看護師からの依頼であっても、医師の具体的指示がなければ法律で定められた範囲を超える医療行為は行えません。事例のように、善意であってもルールを逸脱することは許されません。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q10: 119番受信時トリアージで緊急性が高いと判断されたらどうなる？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 救急隊だけでなく、消防隊（ポンプ車など）も同時に出動し、救命活動を補助する体制（PA連携）をとることがあります。また、指令センターは、救急隊の現場到着を待たずに、医療機関への受け入れ要請を開始することもあります。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q11: 医師からの指示が、現場の状況と合わないと感じたら？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 現場の状況を正確に、かつ具体的に再度医師に報告し、判断を仰ぎます。救急救命士は医師の「目」となり「手」となる役割です。現場の情報を的確に伝えることが、最善の医療につながります。決して自己判断で指示を無視してはいけません。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q12: 事後検証では、どのようなことが話し合われるのですか？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> ある救急活動について、観察内容、処置のタイミング、病院選定などが医学的に適切だったかを医師が検証します。個人の責任を追及する場ではなく、組織全体の質を向上させるための建設的なフィードバックの場です。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q13: 血糖測定で異常がなかった場合、意識障害の原因は何を考える？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 低血糖が否定された場合、脳卒中、頭部外傷、てんかん、薬物中毒、熱中症など、他の様々な原因を想定し、観察を続けます。これらの情報を搬送先の医療機関に正確に伝えることが重要です。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q14: 災害現場でのトリアージタッグの色分けの意味は？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 治療の優先順位を示します。赤（最優先治療群）、黄（待機的治療群）、緑（軽処置群）、黒（死亡群・不処置群）の4色に分類し、限られた医療資源を最も効果的に配分するために用います。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q15: 消防隊員が救急現場でできることは何ですか？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 救急隊の活動を補助する重要な役割があります。具体的には、心肺蘇生法（CPR）の補助、資機材の搬送、傷病者の搬出、現場の安全確保など、多岐にわたります。これをPA連携と呼びます。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q16: なぜ救急活動記録はそんなに重要なんですか？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 病院への正確な情報伝達、事後検証による活動の質の向上、法的な証拠、そして今後の救急行政のデータとして、非常に重要です。DX化は、この記録の正確性と効率を飛躍的に高めます。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q17: 救急救命士の資格を持っていない隊員ができる処置の範囲は？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 救急隊員（資格なし）は、定められた応急手当の範囲内で活動します。具体的には、心肺蘇生法、AEDの使用、止血、保温などです。救急救命士が行うような特定行為（薬剤投与など）はできません。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q18: 精神的なショックを受けている傷病者への対応は？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> まずは安心感を与えることが第一です。落ち着いた声で、ゆっくりと、分かりやすい言葉で話しかけます。身体的な接触は慎重に行い、プライバシーに配慮した環境を整えることも重要です。必要に応じて、専門の支援チームとの連携も考えます。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q19: パラアスリートの競技用具（車いすなど）はどう扱えばいい？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 競技用具は選手にとって体の一部です。可能な限り、傷病者と一緒に搬送するのが原則です。搬送が困難な場合は、大会関係者などに引き継ぎ、後で本人に渡るよう手配します。勝手に処分したり、放置したりしてはいけません。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q20: 複数の傷病者がいる場合、誰から観察を始めるべき？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> ぱっと見で最も重症に見える傷病者や、呼びかけに反応がない傷病者から観察を開始するのが原則です。ただし、現場の状況（危険が及ぶ場所など）も考慮し、安全を確保しながら効率的に活動します。</p></div>
+                </details>
+                 <details class="qa-item group">
+                    <summary>Q21: 病院に搬送を断られることはありますか？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 「応需困難」と呼ばれる状況はあり得ます。これは、病院側のベッドが満床であったり、専門医が手術中であったりして、物理的に受け入れが不可能な場合です。救急隊は実施基準に基づき、速やかに次の候補病院への連絡を開始します。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q22: プロトコールの内容は、全国共通ですか？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 国が示す標準的なプロトコールを基に、各地域のMC協議会が地域の実情に合わせて内容を調整し、策定・承認します。そのため、基本的な考え方は共通ですが、細部においては地域差がある場合があります。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q23: 家族から搬送を拒否された場合はどうしますか？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 傷病者本人の意思が最優先されます。本人の意思が確認できない場合は、家族の意向を尊重しますが、明らかに生命の危険があると判断される場合は、説得を試みます。最終的に搬送しない場合でも、その旨を記録し、必要に応じて警察や行政機関に連絡します。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q24: 熱中症が疑われるパラアスリートへの現場での処置は？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 涼しい場所へ移動させ、衣服を緩め、体（特に首、脇の下、足の付け根）を冷やすことが最優先です。意識がはっきりしていれば、経口補水液などを飲ませます。自律神経に障がいのある選手は体温調節機能が低下している場合があり、特に注意が必要です。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q25: なぜ静脈路確保は「命のルート」と呼ばれるのですか？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> ショック状態などで血圧が低下すると、血管が細くなり針を刺すのが非常に困難になります。早期にルートを確保しておくことで、急変時に昇圧剤などの薬剤を迅速かつ確実に投与でき、救命の可能性を大きく高めるからです。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q26: 救急現場でドローンが活用されることはありますか？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> はい、実証実験が進んでいます。山間部での遭難者捜索や、災害現場全体の状況把握、医薬品やAEDの搬送などでの活用が期待されています。これも救急活動のDXの一環です。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q27: 救急救命士の再教育は、どのような内容ですか？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 新しい医療知識や技術の習得、シミュレーション訓練による特定行為の反復練習、事後検証で明らかになった課題の共有などが行われます。医療は日々進歩するため、常に学び続ける姿勢が求められます。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q28: 現場で活動する上で、最も大切な心構えは何ですか？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 「安全、確実、迅速」です。まず自分たち隊員の安全を確保し（Safety）、プロトコールに従って確実な処置を行い（Sure）、そして迅速に（Speedy）活動すること。この3つのバランスが、質の高い救急活動には不可欠です。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q29: 集団災害現場での消防隊の役割は？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 救助活動（ガレキからの救出など）や、トリアージの補助、軽症者の応急手当、搬送のサポートなど、多岐にわたります。救急隊と消防隊が一体となって活動する「総合消防力」が試されます。</p></div>
+                </details>
+                <details class="qa-item group">
+                    <summary>Q30: アジアパラ大会で予想される特有の事案は？</summary>
+                    <div class="qa-answer"><p><strong>A:</strong> 競技中の外傷はもちろん、持病の悪化、熱中症、そして文化や食事の違いによる体調不良などが考えられます。また、テロなどの特殊災害への備えも通常以上に重要となります。様々な事態を想定した訓練と準備が必要です。</p></div>
+                </details>
+            </div>
+        </section>
+
+        <!-- Conclusion -->
+        <section>
+            <div class="bg-white p-6 rounded-lg shadow-inner border-t-4 border-blue-700">
+                <h2 class="text-2xl font-bold text-blue-800 mb-4">まとめ</h2>
+                <p class="mb-4">今回解説した用語は、それぞれがバラバラに存在するのではなく、互いに深く関連し合って、一人でも多くの命を救うための精緻な「システム」を構築しています。</p>
+                <p>「実施基準」という地域全体の大きなルールのもと、「メディカルコントロール」によって活動の質が保証され、標準化された「プロトコール」に従って、「救急救命士」が現場で高度な処置を行う。この一連のつながりが、日本の質の高い救急医療を支えているのです。</p>
+                <p class="mt-4 font-semibold">私たち市民がこうした仕組みを理解することは、救急医療体制の適切な利用を促し、その発展を支える上で非常に重要です。</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center p-4 mt-8 text-gray-500 text-sm">
+        <p>Copyright &copy; 2024 Aichi Emergency Medical Information. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        // Smooth scroll for details element
+        document.querySelectorAll('details').forEach((detail) => {
+            detail.addEventListener('toggle', (event) => {
+                if (detail.open) {
+                    // Optional: Close other details elements
+                    document.querySelectorAll('details').forEach(otherDetail => {
+                        if (otherDetail !== detail) {
+                            otherDetail.removeAttribute('open');
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
