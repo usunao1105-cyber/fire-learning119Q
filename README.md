@@ -121,7 +121,7 @@ e-Learning119Q  救急業務
 
     <div class="card">
       <div class="lesson-title">Lesson 4</div>
-      <div class="lesson-desc">急医療の現場がわかる！やさしく解説（アジアパラ大会対応版）<</div>
+      <div class="lesson-desc">救急医療の現場がわかる！解説（アジアパラ大会対応版）<</div>
       <a href="lesson4/index.html" class="button">▶ 学習する</a>
     </div>
 
