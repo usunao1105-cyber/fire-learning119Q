@@ -12,17 +12,13 @@ lesson2/index.html
     <!-- Chosen Palette: Calm Preparedness (#FAF8F5 Warm Neutral, #333D45 Dark Slate, #4A7C59 Muted Green, #D9A443 Muted Gold) -->
     <!-- Application Structure Plan: 単一ページのグリッドレイアウト。上部に主要機能である「全言語連続再生」ボタンを大きく配置し、その下に個別再生ボタンを並べることで、緊急時の操作優先度を明確にした。ワンクリックで最も重要な機能が作動するUIは、指揮官の負担を軽減する。 -->
     <!-- Visualization & Content Choices: 
-        - 報告書情報: 「歩ける人はこちらへ」の多言語メッセージ → 目的: 連続音声再生 → ビジュアライゼーション: 大きな再生/停止ボタンとステータス表示エリアを追加 → インタラクション: クリックで全言語の音声を5回ループ再生、再クリックで停止 → 理由: 現場で一度操作すれば、あとは車両スピーカーでの拡声に集中できるよう、ハンズフリーに近い運用を実現するため。再生状況のフィードバックも提供し、確実な操作を支援する。 -->
+        - Report Info: 「歩ける人はこちらへ」の多言語メッセージ → 目的: 連続音声再生 → ビジュアライゼーション: 大きな再生/停止ボタンとステータス表示エリアを追加 → インタラクション: クリックで全言語の音声を5回ループ再生、再クリックで停止 → 理由: 現場で一度操作すれば、あとは車両スピーカーでの拡声に集中できるよう、ハンズフリーに近い運用を実現するため。再生状況のフィードバックも提供し、確実な操作を支援する。 -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
             font-family: 'Noto Sans JP', sans-serif;
             background-color: #FAF8F5;
             color: #333D45;
-        }
-        .btn-play.loading, #play-all-btn.loading {
-            background-color: #D9A443;
-            cursor: wait;
         }
         .btn-play.playing, #play-all-btn.playing {
             background-color: #d32f2f; /* Red for Stop/Playing */
@@ -68,13 +64,12 @@ lesson2/index.html
         const audioGrid = document.getElementById('audio-grid');
         const playAllBtn = document.getElementById('play-all-btn');
         const playAllStatus = document.getElementById('play-all-status');
-
-        let currentlyPlaying = null;
+        
+        const synth = window.speechSynthesis;
         let isSequencePlaying = false;
         let currentLanguageIndex = 0;
         let currentLoopCount = 1;
         const MAX_LOOPS = 5;
-        let audioQueue = [];
 
         const languages = [
             { lang: 'ja-JP', displayNameJP: '日本語', displayNameNative: '日本語', flag: '🇯🇵', text: '歩ける方は、こちらへ来てください。落ち着いて移動してください。' },
@@ -100,7 +95,7 @@ lesson2/index.html
                         </div>
                     </div>
                 </div>
-                <button data-text="${lang.text}" class="btn-play w-full mt-4 bg-[#4A7C59] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#3e664b] transition-colors flex items-center justify-center text-xl">
+                <button data-text="${lang.text}" data-lang="${lang.lang}" class="btn-play w-full mt-4 bg-[#4A7C59] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#3e664b] transition-colors flex items-center justify-center text-xl">
                     <span class="play-icon">▶</span>
                     <span class="button-text ml-2">再生</span>
                 </button>
@@ -108,30 +103,20 @@ lesson2/index.html
             audioGrid.appendChild(card);
         });
         
-        // Individual play logic
-        audioGrid.addEventListener('click', async (e) => {
+        audioGrid.addEventListener('click', (e) => {
             const button = e.target.closest('.btn-play');
-            if (!button || button.classList.contains('loading') || button.classList.contains('playing') || isSequencePlaying) return;
+            if (!button || button.classList.contains('playing') || isSequencePlaying) return;
 
-            if (currentlyPlaying) {
-                currentlyPlaying.pause();
-                currentlyPlaying.currentTime = 0;
+            if (synth.speaking) {
+                synth.cancel();
             }
+            document.querySelectorAll('.btn-play.playing').forEach(b => setButtonState(b, 'default'));
 
             const textToSpeak = button.dataset.text;
-            setButtonState(button, 'loading');
-
-            try {
-                const audioUrl = await generateAndGetAudioUrl(textToSpeak);
-                if (audioUrl) playAudio(audioUrl, button);
-                else throw new Error('Audio URL not created.');
-            } catch (error) {
-                console.error('Error generating or playing audio:', error);
-                setButtonState(button, 'default');
-            }
+            const langCode = button.dataset.lang;
+            speakText(textToSpeak, langCode, button);
         });
 
-        // Sequential play logic
         playAllBtn.addEventListener('click', () => {
             if (isSequencePlaying) {
                 stopSequentialPlayback();
@@ -140,24 +125,15 @@ lesson2/index.html
             }
         });
 
-        async function startSequentialPlayback() {
-            isSequencePlaying = true;
-            setPlayAllButtonState('loading');
-            playAllStatus.textContent = '音声データを生成中... しばらくお待ちください。';
-
-            try {
-                const promises = languages.map(lang => generateAndGetAudioUrl(lang.text));
-                audioQueue = await Promise.all(promises);
-                
-                currentLanguageIndex = 0;
-                currentLoopCount = 1;
-                playNextInSequence();
-
-            } catch (error) {
-                console.error("Error pre-generating audio:", error);
-                playAllStatus.textContent = "音声の生成に失敗しました。";
-                stopSequentialPlayback();
+        function startSequentialPlayback() {
+            if (synth.speaking) {
+                synth.cancel();
             }
+            isSequencePlaying = true;
+            currentLanguageIndex = 0;
+            currentLoopCount = 1;
+            setPlayAllButtonState('playing');
+            playNextInSequence();
         }
         
         function playNextInSequence() {
@@ -173,32 +149,30 @@ lesson2/index.html
             }
 
             const lang = languages[currentLanguageIndex];
-            const audioUrl = audioQueue[currentLanguageIndex];
-            
             playAllStatus.textContent = `再生中: ${lang.displayNameNative} (ループ: ${currentLoopCount}/${MAX_LOOPS})`;
-            setPlayAllButtonState('playing');
-
-            currentlyPlaying = new Audio(audioUrl);
-            currentlyPlaying.play();
-            currentlyPlaying.onended = () => {
+            
+            const utterance = new SpeechSynthesisUtterance(lang.text);
+            utterance.lang = lang.lang;
+            
+            utterance.onend = () => {
                 currentLanguageIndex++;
-                playNextInSequence();
+                setTimeout(playNextInSequence, 200);
             };
-            currentlyPlaying.onerror = () => {
-                 console.error(`Error playing audio for ${lang.displayNameNative}`);
-                 currentLanguageIndex++;
-                 playNextInSequence(); // Skip to the next one on error
-            }
+            
+            utterance.onerror = (event) => {
+                console.error('SpeechSynthesisUtterance.onerror:', event);
+                currentLanguageIndex++;
+                setTimeout(playNextInSequence, 200);
+            };
+            
+            synth.speak(utterance);
         }
 
         function stopSequentialPlayback() {
             isSequencePlaying = false;
-            if (currentlyPlaying) {
-                currentlyPlaying.pause();
-                currentlyPlaying = null;
+            if (synth.speaking) {
+                synth.cancel();
             }
-            audioQueue.forEach(url => URL.revokeObjectURL(url));
-            audioQueue = [];
             playAllStatus.textContent = '';
             setPlayAllButtonState('default');
         }
@@ -206,16 +180,13 @@ lesson2/index.html
         function setPlayAllButtonState(state) {
             const icon = playAllBtn.querySelector('.play-icon');
             const text = playAllBtn.querySelector('.button-text');
-            playAllBtn.classList.remove('loading', 'playing');
+            playAllBtn.classList.remove('playing');
 
-            if (state === 'loading') {
-                playAllBtn.classList.add('loading');
-                text.textContent = '生成中...';
-            } else if (state === 'playing') {
+            if (state === 'playing') {
                 playAllBtn.classList.add('playing');
                 icon.textContent = '■';
                 text.textContent = '停止';
-            } else { // default
+            } else {
                 icon.textContent = '▶';
                 text.textContent = '全言語 連続再生 (5回)';
             }
@@ -223,95 +194,37 @@ lesson2/index.html
 
         function setButtonState(button, state) {
             const playIcon = button.querySelector('.play-icon');
-            button.classList.remove('loading', 'playing');
+            button.classList.remove('playing');
 
-            if (state === 'loading') {
-                button.classList.add('loading');
-            } else if (state === 'playing') {
+            if (state === 'playing') {
                 button.classList.add('playing');
                 playIcon.textContent = '■';
-            } else { // default
+            } else {
                 playIcon.textContent = '▶';
             }
         }
 
-        function playAudio(url, button) {
-             currentlyPlaying = new Audio(url);
-             setButtonState(button, 'playing');
-             currentlyPlaying.play();
-             currentlyPlaying.onended = () => {
-                setButtonState(button, 'default');
-                URL.revokeObjectURL(url);
-                currentlyPlaying = null;
-             };
-             currentlyPlaying.onerror = () => {
-                setButtonState(button, 'default');
-                URL.revokeObjectURL(url);
-             }
-        }
-        
-        async function generateAndGetAudioUrl(text) {
-             const apiKey = "AIzaSyAM1ZZibznTJZ9nSzWTrdw7zKyyBX8UmVM"; // Provided API Key
-             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
-             const payload = {
-                contents: [{ parts: [{ text: text }] }],
-                generationConfig: { responseModalities: ["AUDIO"] },
-                model: "gemini-2.5-flash-preview-tts"
-             };
-             const response = await fetch(apiUrl, {
-                 method: 'POST',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify(payload)
-             });
-             if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-             const result = await response.json();
-             const audioData = result?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-             const mimeType = result?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.mimeType;
+        function speakText(text, lang, button) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
 
-             if (audioData && mimeType && mimeType.startsWith("audio/")) {
-                const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
-                const pcmData = base64ToArrayBuffer(audioData);
-                const pcm16 = new Int16Array(pcmData);
-                const wavBlob = pcmToWav(pcm16, 1, sampleRate);
-                return URL.createObjectURL(wavBlob);
-             }
-             return null;
-        }
-
-        function base64ToArrayBuffer(base64) {
-            const binaryString = window.atob(base64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
-            return bytes.buffer;
-        }
-
-        function pcmToWav(pcmData, numChannels, sampleRate) {
-            const buffer = new ArrayBuffer(44 + pcmData.length * 2);
-            const view = new DataView(buffer);
-            const writeString = (view, offset, string) => {
-                for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+            utterance.onstart = () => {
+                setButtonState(button, 'playing');
             };
-            writeString(view, 0, 'RIFF');
-            view.setUint32(4, 36 + pcmData.length * 2, true);
-            writeString(view, 8, 'WAVE');
-            writeString(view, 12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true);
-            view.setUint16(22, numChannels, true);
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * numChannels * 2, true);
-            view.setUint16(32, numChannels * 2, true);
-            view.setUint16(34, 16, true);
-            writeString(view, 36, 'data');
-            view.setUint32(40, pcmData.length * 2, true);
-            for (let i = 0; i < pcmData.length; i++) view.setInt16(44 + i * 2, pcmData[i], true);
-            return new Blob([view], { type: 'audio/wav' });
+            
+            utterance.onend = () => {
+                setButtonState(button, 'default');
+            };
+
+            utterance.onerror = (event) => {
+                console.error('SpeechSynthesisUtterance.onerror:', event);
+                setButtonState(button, 'default');
+            };
+            
+            synth.speak(utterance);
         }
     });
     </script>
 </body>
 </html>
-
-
 
