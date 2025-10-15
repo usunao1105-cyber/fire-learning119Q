@@ -109,13 +109,13 @@ e-Learning119Q  救急業務
 
     <div class="card">
       <div class="lesson-title">Lesson 2</div>
-      <div class="lesson-desc">応急処置とバイタルサイン</div>
+      <div class="lesson-desc">多言語 災害時誘導アナウンスツール</div>
       <a href="lesson2/index.html" class="button">▶ 学習する</a>
     </div>
 
     <div class="card">
       <div class="lesson-title">Lesson 3</div>
-      <div class="lesson-desc">外傷・骨折・止血法</div>
+      <div class="lesson-desc">多言語 医療トリアージ案内ツール</div>
       <a href="lesson3/index.html" class="button">▶ 学習する</a>
     </div>
 
