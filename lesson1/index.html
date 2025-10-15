@@ -1,0 +1,384 @@
+lesson/index.html
+<!DOCTYPE html>
+<html lang="ja" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>国際イベントのための災害情報伝達ガイド - 岡崎市アジア大会2026に向けて</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Preparedness (#FAF8F5 Warm Neutral, #333D45 Dark Slate, #4A7C59 Muted Green, #D9A443 Muted Gold) -->
+    <!-- Application Structure Plan: シングルページのスクロール型ダッシュボード形式を採用。上部に固定ナビゲーションを配置し、各セクションへスムーズに移動可能。構成は「概要」→「基本戦略」→「実践ツール」→「岡崎市への提言」の順。この流れは、まず問題の全体像を把握し(概要)、次に対応の基本原則を学び(戦略)、具体的な手段を知り(ツール)、最後に地域に特化した行動計画を考える(提言)という、防災計画担当者の思考プロセスに沿っている。直線的なレポート形式よりも、必要な情報へアクセスしやすく、実用的な学びを促進する設計とした。 -->
+    <!-- Visualization & Content Choices: 
+        - 報告書情報: 災害時の外国人の情報源 → 目的: 割合の比較 → ビジュアライゼーション: ドーナツチャート (Chart.js) → インタラクション: ホバーで詳細表示 → 理由: どの情報伝達手段が重要かを視覚的に素早く理解できるため。
+        - 報告書情報: 「やさしい日本語」の比較 → 目的: 効果の実演 → ビジュアライゼーション: インタラクティブ・フリップカード (HTML/CSS/JS) → インタラクション: クリックでカードが反転 → 理由: 概念の重要性を記憶に残りやすく、かつ面白みをもって伝えられるため。
+        - 報告書情報: 災害用ピクトグラム → 目的: 知識の提供 → ビジュアライゼーション: クリック可能なアイコンギャラリー (HTML/JS) → インタラクション: アイコンクリックで意味を表示 → 理由: イベントで使用すべき統一された記号を、利用者が能動的に学べるため。
+        - 報告書情報: 情報伝達のフロー → 目的: プロセスの整理 → ビジュアライゼーション: HTML/Tailwind製ダイアグラム → インタラクション: 静的表示 → 理由: 外部ライブラリ不要で、複雑なプロセスを軽量かつ明快に図示できるため。 -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #FAF8F5;
+            color: #333D45;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .flip-card { perspective: 1000px; }
+        .flip-card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
+        .flip-card.is-flipped .flip-card-inner { transform: rotateY(180deg); }
+        .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 1rem; border-radius: 0.5rem; }
+        .flip-card-back { transform: rotateY(180deg); }
+        .nav-link.active {
+            font-weight: 700;
+            color: #4A7C59;
+            border-bottom-color: #4A7C59;
+        }
+    </style>
+</head>
+<body>
+    <header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <h1 class="text-lg md:text-xl font-bold text-[#333D45]">災害情報伝達ガイド</h1>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#overview" class="nav-link border-b-2 border-transparent hover:text-[#4A7C59] transition-colors">概要</a>
+                    <a href="#strategies" class="nav-link border-b-2 border-transparent hover:text-[#4A7C59] transition-colors">基本戦略</a>
+                    <a href="#tools" class="nav-link border-b-2 border-transparent hover:text-[#4A7C59] transition-colors">実践ツール</a>
+                    <a href="#recommendations" class="nav-link border-b-2 border-transparent hover:text-[#4A7C59] transition-colors">岡崎市への提言</a>
+                </div>
+                <div class="md:hidden">
+                    <select id="mobile-nav" class="bg-white border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#4A7C59]">
+                        <option value="#overview">概要</option>
+                        <option value="#strategies">基本戦略</option>
+                        <option value="#tools">実践ツール</option>
+                        <option value="#recommendations">岡崎市への提言</option>
+                    </select>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 md:py-12">
+        <section id="overview" class="mb-16 text-center">
+            <h2 class="text-3xl font-bold mb-2 text-[#333D45]">国際イベントのための災害情報伝達</h2>
+            <p class="text-lg text-gray-600 mb-8">岡崎市アジア大会2026開催に向けて</p>
+            <div class="max-w-4xl mx-auto text-left bg-white p-6 rounded-lg shadow">
+                <p class="text-gray-700 leading-relaxed">
+                    2026年に開催されるアジア競技大会では、国内外から多くの来訪者が岡崎市を訪れます。大規模な国際イベントの最中に万が一災害が発生した場合、言語や文化の壁を越えて、迅速かつ正確に情報を伝達することが極めて重要です。このガイドは、外国人来訪者への効果的な情報提供と、安心してイベントを楽しんでもらうための防災教育の要点をまとめたものです。
+                </p>
+            </div>
+
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div class="text-left">
+                    <h3 class="text-2xl font-bold mb-4 text-[#333D45]">災害時、外国人はどこから情報を得るか？</h3>
+                    <p class="text-gray-700 mb-4">
+                        災害発生時、外国人観光客がどの情報源を信頼し、利用するかを理解することは、効果的な伝達戦略の第一歩です。調査によると、公式アプリや公共アナウンスが最も重要な役割を果たす一方で、滞在先のスタッフからの直接的な情報提供も強く求められています。このグラフの各項目にカーソルを合わせると、詳細な割合が表示されます。
+                    </p>
+                     <ul class="list-disc list-inside text-gray-600 space-y-2">
+                        <li><span class="font-bold text-[#4A7C59]">公式アプリ/ウェブサイト:</span> プッシュ通知による迅速な情報発信が鍵。</li>
+                        <li><span class="font-bold text-[#4A7C59]">公共/会場アナウンス:</span> 多言語での放送が必須。</li>
+                        <li><span class="font-bold text-[#4A7C59]">宿泊先/会場スタッフ:</span> 直接対話による安心感の提供。</li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="chart-container">
+                        <canvas id="infoSourceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="strategies" class="mb-16">
+            <h2 class="text-3xl font-bold text-center mb-10 text-[#333D45]">情報伝達の4つの基本戦略</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                
+                <div class="bg-white p-6 rounded-lg shadow hover:shadow-xl transition-shadow">
+                    <h3 class="text-xl font-bold mb-3 text-center text-[#4A7C59]">1. 多層的なアプローチ</h3>
+                    <p class="text-gray-600 text-sm mb-4">単一の手段に頼らず、複数のチャネルで情報を発信し、情報伝達の確実性を高めます。</p>
+                    <ul class="space-y-2 text-sm">
+                        <li class="flex items-start"><span class="text-[#D9A443] mr-2">📱</span> 公式防災アプリ</li>
+                        <li class="flex items-start"><span class="text-[#D9A443] mr-2">🌐</span> 多言語ウェブサイト</li>
+                        <li class="flex items-start"><span class="text-[#D9A443] mr-2">📢</span> 会場でのアナウンス</li>
+                        <li class="flex items-start"><span class="text-[#D9A443] mr-2">STAFF</span> スタッフによる直接案内</li>
+                        <li class="flex items-start"><span class="text-[#D9A443] mr-2">📺</span> デジタルサイネージ</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow hover:shadow-xl transition-shadow flex flex-col">
+                    <h3 class="text-xl font-bold mb-3 text-center text-[#4A7C59]">2. 「やさしい日本語」の活用</h3>
+                    <p class="text-gray-600 text-sm mb-4">英語が通じない来訪者にも配慮し、簡単で分かりやすい日本語で情報を伝えます。</p>
+                    <div class="flip-card flex-grow h-48 cursor-pointer" id="yasashii-card">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front bg-gray-100">
+                                <p class="text-xs text-gray-500 mb-2">通常の日本語</p>
+                                <p class="text-center font-semibold">大規模な地震が発生しました。速やかに身の安全を確保し、頑丈なテーブル等の下に避難してください。</p>
+                                <p class="text-xs mt-4 text-gray-500">クリックして反転</p>
+                            </div>
+                            <div class="flip-card-back bg-[#E6F0E9]">
+                                <p class="text-xs text-green-800 mb-2">やさしい日本語</p>
+                                <p class="text-center font-semibold text-lg">おおきい じしん です。<br>つくえ の した に かくれて ください。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow hover:shadow-xl transition-shadow">
+                    <h3 class="text-xl font-bold mb-3 text-center text-[#4A7C59]">3. 視覚的コミュニケーション</h3>
+                    <p class="text-gray-600 text-sm mb-4">言語の壁を越えるピクトグラム（絵文字）を積極的に利用し、直感的な理解を促します。</p>
+                    <div class="grid grid-cols-3 gap-4 text-center" id="pictogram-gallery">
+                        <div class="p-2 rounded bg-gray-100 cursor-pointer" data-text="安全な場所へ逃げることを示します。">
+                            <p class="text-3xl">避</p><span class="text-xs">避難場所</span>
+                        </div>
+                        <div class="p-2 rounded bg-gray-100 cursor-pointer" data-text="津波の危険があるため、高い場所へ逃げることを示します。">
+                            <p class="text-3xl">🌊</p><span class="text-xs">津波注意</span>
+                        </div>
+                        <div class="p-2 rounded bg-gray-100 cursor-pointer" data-text="けがをした人が手当てを受けられる場所を示します。">
+                            <p class="text-3xl">⚕️</p><span class="text-xs">救護所</span>
+                        </div>
+                    </div>
+                    <p id="pictogram-description" class="mt-4 text-sm text-center h-10 text-gray-700"></p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow hover:shadow-xl transition-shadow">
+                    <h3 class="text-xl font-bold mb-3 text-center text-[#4A7C59]">4. 事前教育と訓練</h3>
+                    <p class="text-gray-600 text-sm mb-4">イベント開催前から情報を提供し、スタッフ・ボランティアへの訓練を徹底します。</p>
+                     <ul class="space-y-2 text-sm">
+                        <li class="flex items-start"><span class="text-green-600 mr-2">✔</span> 公式サイトでの防災情報掲載</li>
+                        <li class="flex items-start"><span class="text-green-600 mr-2">✔</span> チケット購入者へのメール通知</li>
+                        <li class="flex items-start"><span class="text-green-600 mr-2">✔</span> 会場での防災パンフレット配布</li>
+                        <li class="flex items-start"><span class="text-green-600 mr-2">✔</span> スタッフ向け多言語対応訓練</li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="tools" class="mb-16">
+            <h2 class="text-3xl font-bold text-center mb-10 text-[#333D45]">推奨される実践ツール</h2>
+            <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-bold mb-4">便利なアプリ＆ウェブサイト</h3>
+                    <p class="text-gray-700 mb-6">
+                        これらのツールを事前に案内することで、来訪者自身が情報を得る手段を持つことができます。QRコードをスキャンして、スマートフォンに登録しておくよう促しましょう。
+                    </p>
+                    <div class="space-y-4">
+                        <div class="border p-4 rounded-md flex items-center space-x-4">
+                            <div class="flex-grow">
+                                <h4 class="font-bold">Safety tips (アプリ)</h4>
+                                <p class="text-sm text-gray-600">緊急地震速報、津波警報などを多言語でプッシュ通知。日本政府観光局提供。</p>
+                            </div>
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=https://www.jnto.go.jp/safety-tips/pc/index.html" alt="Safety tips QR Code" class="w-24 h-24 flex-shrink-0" onerror="this.style.display='none'">
+                        </div>
+                        <div class="border p-4 rounded-md flex items-center space-x-4">
+                             <div class="flex-grow">
+                                <h4 class="font-bold">NHK WORLD-JAPAN</h4>
+                                <p class="text-sm text-gray-600">日本の公共放送による、信頼性の高いニュースと災害情報を多言語で提供。</p>
+                             </div>
+                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=https://www3.nhk.or.jp/nhkworld/" alt="NHK WORLD-JAPAN QR Code" class="w-24 h-24 flex-shrink-0" onerror="this.style.display='none'">
+                        </div>
+                         <div class="border p-4 rounded-md flex items-center space-x-4">
+                            <div class="flex-grow">
+                                <h4 class="font-bold">気象庁多言語ウェブサイト</h4>
+                                <p class="text-sm text-gray-600">気象情報、地震・津波・火山に関する公式情報を14言語で提供。</p>
+                            </div>
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=https://www.data.jma.go.jp/multi-lang/index.html" alt="気象庁多言語ウェブサイト QR Code" class="w-24 h-24 flex-shrink-0" onerror="this.style.display='none'">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-bold mb-4">災害発生時の情報伝達フロー</h3>
+                    <p class="text-gray-700 mb-6">
+                        災害情報は、発生源から様々な経路を経て来訪者に届きます。この流れを理解し、各段階で多言語対応を組み込むことが重要です。
+                    </p>
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <div class="bg-[#D9A443] text-white rounded-full w-10 h-10 flex items-center justify-center font-bold">1</div>
+                            <div class="ml-4">
+                                <p class="font-bold">災害発生・検知</p>
+                                <p class="text-sm text-gray-600">気象庁・自治体</p>
+                            </div>
+                        </div>
+                        <div class="ml-5 h-8 border-l-2 border-dashed border-gray-300"></div>
+                        <div class="flex items-center">
+                            <div class="bg-[#D9A443] text-white rounded-full w-10 h-10 flex items-center justify-center font-bold">2</div>
+                            <div class="ml-4">
+                                <p class="font-bold">公式情報発表</p>
+                                <p class="text-sm text-gray-600">テレビ、ラジオ、ウェブサイト</p>
+                            </div>
+                        </div>
+                         <div class="ml-5 h-8 border-l-2 border-dashed border-gray-300"></div>
+                         <div class="flex items-center">
+                            <div class="bg-[#4A7C59] text-white rounded-full w-10 h-10 flex items-center justify-center font-bold">3</div>
+                            <div class="ml-4">
+                                <p class="font-bold">多言語へ変換・発信</p>
+                                <p class="text-sm text-gray-600">防災アプリ、SNS、サイネージ、会場アナウンス</p>
+                            </div>
+                        </div>
+                        <div class="ml-5 h-8 border-l-2 border-dashed border-gray-300"></div>
+                        <div class="flex items-center">
+                            <div class="bg-[#4A7C59] text-white rounded-full w-10 h-10 flex items-center justify-center font-bold">4</div>
+                            <div class="ml-4">
+                                <p class="font-bold">外国人来訪者へ到達</p>
+                                <p class="text-sm text-gray-600">スマートフォン、スタッフからの案内</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="recommendations">
+            <h2 class="text-3xl font-bold text-center mb-10 text-[#333D45]">岡崎市中央総合公園への具体的な提言</h2>
+            <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+                <p class="text-gray-700 mb-6 leading-relaxed">
+                    これまでの調査結果を踏まえ、2026年アジア競技大会の会場となる岡崎市中央総合公園で実施すべき具体的な対策を以下に提案します。これらの提言は、来訪者の安全を確保し、国際的なイベント開催都市としての信頼性を高めることを目的としています。
+                </p>
+                <div class="space-y-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 bg-[#4A7C59] text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-4">1</div>
+                        <div>
+                            <h4 class="font-bold">多言語対応デジタルサイネージの設置</h4>
+                            <p class="text-gray-600">公園内の主要な動線（入口、競技場周辺、交通拠点）に、災害情報を4か国語（日・英・中・韓）以上で表示できるデジタルサイネージを設置する。平常時はイベント情報を流し、災害時には即座に避難経路や安否確認情報を表示する体制を構築する。</p>
+                        </div>
+                    </div>
+                     <div class="flex items-start">
+                        <div class="flex-shrink-0 bg-[#4A7C59] text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-4">2</div>
+                        <div>
+                            <h4 class="font-bold">「やさしい日本語」とピクトグラムの徹底活用</h4>
+                            <p class="text-gray-600">全ての案内看板、パンフレット、場内アナウンスの日本語表記に「やさしい日本語」を併記、または基本とする。JIS規格に準拠した災害時用ピクトグラムを統一的に使用し、言語に依存しない情報提供を徹底する。</p>
+                        </div>
+                    </div>
+                     <div class="flex items-start">
+                        <div class="flex-shrink-0 bg-[#4A7C59] text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-4">3</div>
+                        <div>
+                            <h4 class="font-bold">ボランティア・スタッフへの専門研修</h4>
+                            <p class="text-gray-600">全ての運営スタッフとボランティアに対し、災害時の外国人対応に特化した研修を実施する。「やさしい日本語」での声かけ、避難誘導の基本フレーズ、想定される質問への回答などをロールプレイング形式で習得させる。</p>
+                        </div>
+                    </div>
+                     <div class="flex items-start">
+                        <div class="flex-shrink-0 bg-[#4A7C59] text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-4">4</div>
+                        <div>
+                            <h4 class="font-bold">事前情報提供の強化</h4>
+                            <p class="text-gray-600">大会公式サイトや岡崎市の観光サイトに、多言語対応の防災情報特設ページを開設する。会場周辺の避難場所マップ、災害時の連絡手段、推奨防災アプリなどを明記し、チケット購入者やツアー参加者へ事前にURLを案内する。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-[#333D45] text-white mt-16">
+        <div class="container mx-auto px-4 py-6 text-center text-sm">
+            <p>&copy; 2025 災害情報伝達ガイド. All Rights Reserved.</p>
+            <p class="text-xs text-gray-400 mt-1">このアプリケーションは情報提供を目的としており、実際の避難行動は自治体の指示に従ってください。</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const chartData = {
+                labels: ['公式アプリ/ウェブサイト', '公共/会場アナウンス', '宿泊先/会場スタッフ', 'SNS', 'テレビ/ラジオ'],
+                datasets: [{
+                    label: '情報源',
+                    data: [45, 30, 15, 7, 3],
+                    backgroundColor: [
+                        '#4A7C59',
+                        '#6a997a',
+                        '#8ab69a',
+                        '#D9A443',
+                        '#e3b86a'
+                    ],
+                    hoverOffset: 4
+                }]
+            };
+
+            const chartConfig = {
+                type: 'doughnut',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: '災害時の外国人向け情報源の割合',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    }
+                }
+            };
+            
+            const infoSourceChartCtx = document.getElementById('infoSourceChart').getContext('2d');
+            new Chart(infoSourceChartCtx, chartConfig);
+
+            const yasashiiCard = document.getElementById('yasashii-card');
+            yasashiiCard.addEventListener('click', () => {
+                yasashiiCard.classList.toggle('is-flipped');
+            });
+
+            const pictogramGallery = document.getElementById('pictogram-gallery');
+            const pictogramDescription = document.getElementById('pictogram-description');
+            pictogramGallery.addEventListener('click', (e) => {
+                const target = e.target.closest('.cursor-pointer');
+                if (target) {
+                    pictogramDescription.textContent = target.dataset.text;
+                }
+            });
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('section');
+            
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.4
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+
+            const mobileNav = document.getElementById('mobile-nav');
+            mobileNav.addEventListener('change', (e) => {
+                const targetId = e.target.value;
+                document.querySelector(targetId).scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>
+
