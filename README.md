@@ -103,7 +103,7 @@ e-Learning119Q  救急業務
   <div class="grid">
     <div class="card">
       <div class="lesson-title">Lesson 1</div>
-      <div class="lesson-desc">救急業務の基礎知識</div>
+      <div class="lesson-desc">国際イベントのための災害情報伝達</div>
       <a href="lesson1/index.html" class="button">▶ 学習する</a>
     </div>
 
