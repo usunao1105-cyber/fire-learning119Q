@@ -1,0 +1,167 @@
+lesson5/index.html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>現場指揮官・最先着救急隊用 初動報告要領</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .report-template {
+            background-color: #e9ecef;
+            border-left: 5px solid #007bff;
+            padding: 1.5rem;
+            font-family: 'monospace';
+            font-size: 1.1em;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <header class="bg-white shadow-md sticky top-0 z-10">
+        <div class="container mx-auto px-4 py-5 text-center">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900">現場指揮官・最先着救急隊用</h1>
+            <h2 class="text-xl md:text-2xl font-bold text-blue-600">指令センターへの初動報告要領</h2>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        
+        <section id="introduction" class="mb-10">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-xl font-bold mb-3 text-center">はじめに</h3>
+                <p class="text-base leading-relaxed">
+                    本要領は、災害現場に到着した指揮官または最先着隊長が、指令センターに対し**「通常災害ではない」**ことを明確に伝え、災害対応レベルの即時引き上げ（スイッチの切り替え）を要請するための初動報告文言を定めるものである。目的は、DMAT、ドクターヘリ、警察、行政などの関係機関の早期投入を決定させるための、的確かつインパクトのある情報伝達を行うことにある。
+                </p>
+            </div>
+        </section>
+
+        <section id="principles" class="mb-10">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-xl font-bold mb-4 text-center">基本原則「CCC-F」</h3>
+                <ul class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+                    <li class="bg-blue-50 p-4 rounded-md">
+                        <strong class="block text-lg text-blue-700">Clarity</strong>
+                        <span>明瞭</span>
+                    </li>
+                    <li class="bg-blue-50 p-4 rounded-md">
+                        <strong class="block text-lg text-blue-700">Conciseness</strong>
+                        <span>簡潔</span>
+                    </li>
+                    <li class="bg-blue-50 p-4 rounded-md">
+                        <strong class="block text-lg text-blue-700">Confidence</strong>
+                        <span>確信</span>
+                    </li>
+                    <li class="bg-blue-50 p-4 rounded-md">
+                        <strong class="block text-lg text-blue-700">Facts</strong>
+                        <span>事実</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+        
+        <section id="protocol" class="mb-12">
+            <h3 class="text-2xl font-bold mb-6 text-center">基本通信要領（テンプレート）</h3>
+            <div class="space-y-6">
+                
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h4 class="font-bold text-lg mb-2">1. 入電・自隊の特定</h4>
+                    <p class="mb-3 text-gray-600">ポイント：まず誰がどこにいるかを明確に伝える。</p>
+                    <div class="report-template">「岡幸指令、こちら岡崎51。岡崎中央総合公園野球場、覚知。」</div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h4 class="font-bold text-lg mb-2">2. 災害事案の概要（被害の全体像）</h4>
+                    <p class="mb-3 text-gray-600">ポイント：具体的な数字より「多数」「数十名単位」で規模を伝える。「悲鳴」「助けを求める声」は状況の切迫性を効果的に伝える。</p>
+                    <div class="report-template">「現着時、野球場スタンド一部が崩落。負傷者多数、自力避難困難者多数の模様。現在も悲鳴、助けを求める声が多数聞こえる。」</div>
+                </div>
+
+                <div class="bg-yellow-100 border-l-4 border-yellow-500 p-6 rounded-lg shadow-md">
+                    <h4 class="font-bold text-lg mb-2 text-yellow-800">3. 【最重要】災害規模の伝達と体制移行要請（スイッチ）</h4>
+                    <p class="mb-3 text-yellow-700">ポイント：「通常災害にあらず」という断定的な表現で、指令センターに衝撃を与え、事態の異常性を認識させる。この一言が「スイッチ」となる。</p>
+                    <div class="report-template bg-yellow-50">「これは通常災害にあらず。直ちに大規模災害モードへ移行されたい。繰り返す、これは通常災害にあらず。」</div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h4 class="font-bold text-lg mb-2">4. 応援要請（具体的なリソース要求）</h4>
+                    <p class="mb-3 text-gray-600">ポイント：具体的に必要な部隊を名指しで要求する。「広域応援」「ドクターヘリ」「DMAT」は大規模災害のキーワードであり、事態の重大性を補強する。</p>
+                    <div class="report-template">「直ちに最大出場を要請。岡崎市内の救急隊、救助隊全隊。及び、広域応援として西三河消防の応援隊を要請する。合わせて、ドクターヘリ、DMAT派遣、愛知県警、岡崎市災害対策本部へ出動を要請されたい。」</div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h4 class="font-bold text-lg mb-2">5. 現場での活動方針</h4>
+                    <p class="mb-3 text-gray-600">ポイント：現場の統制が取れていることを示し、指令センターを安心させる。</p>
+                    <div class="report-template">「これより人命救助を最優先とする。当隊は指揮本部を球場正面入口に設置、救出及びトリアージ活動を開始する。」</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="examples">
+            <h3 class="text-2xl font-bold mb-6 text-center">具体的な報告例</h3>
+            <div class="space-y-8">
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h4 class="font-bold text-lg mb-3">想定１：大規模地震による建造物倒壊</h4>
+                    <p class="report-template">
+「岡幸指令、こちら岡崎51。岡崎中央総合公園野球場、覚知。
+現着時、野球場スタンドの一部が崩落。グラウンド及び周辺に粉塵が充満し、視界不良。負傷者、自力避難困難者多数の模様。外国人を含む観客がパニック状態にある。
+**これは通常災害にあらず。** 直ちに**大規模災害モード**へ移行されたい。繰り返す、これは通常災害にあらず。
+直ちに最大出場、及び広域応援を要請。ドクターヘリ、DMAT、警察、市災害対策本部へ出動を要請されたい。
+これより人命救助を最優先とし、指揮本部を設置、トリアージを開始する。以上、岡崎51。」
+                    </p>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h4 class="font-bold text-lg mb-3">想定２：原因不明の爆発（特殊災害の疑い）</h4>
+                    <p class="report-template">
+「岡幸指令、こちら救急岡崎１。岡崎中央総合公園バスケットボールアリーナ、覚知。
+アリーナ北側入口付近で爆発があった模様。黒煙及び異臭あり。倒れている負傷者が**数十名単位**で見える。現場はパニック状態。
+**これは単なる救急事案にあらず。** 直ちに**大規模災害及び特殊災害モード**へ移行されたい。
+直ちに最大出場、及び広域応援を要請。ドクターヘリ、DMATに加え、**警察の機動隊、NBC災害対応部隊**の出動を要請されたい。
+当隊は安全を確保し、救護所設置とトリアージ準備を開始する。以上、救急岡崎１。」
+                    </p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h4 class="font-bold text-lg mb-3">想定３：観客の将棋倒し（群衆雪崩）</h4>
+                    <p class="report-template">
+「岡幸指令、こちら救急岡崎１。中央総合公園アーチェリー会場、覚知。
+会場ゲート付近で観客の将棋倒しが発生。現場は広範囲にわたり多数の負傷者が倒れている状態。身動きが取れない者、意識不明者も複数確認できる。
+**これは通常救急にあらず。** 直ちに**集団救急事故モード**へ移行されたい。
+救急隊の増隊、最大出場を要請。また、現場の混乱が激しいため、**警察による緊急交通路の確保及び、雑踏警備**を至急要請する。DMATの派遣も考慮されたい。
+当隊はトリアージを開始、軽症者は係員の誘導で安全なエリアへ移動させている。以上、救急岡崎１。」
+                    </p>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h4 class="font-bold text-lg mb-3">想定４：会場付近での多重衝突事故</h4>
+                    <p class="report-template">
+「岡幸指令、こちら岡崎51。中央総合公園へ向かう主要道路、交差点。覚知。
+大型バスと乗用車5台が絡む多重衝突事故。バスは横転し、多数の乗客が閉じ込められている模様。負傷者は**30名以上**と推定される。
+**これは通常交通救助にあらず。** 直ちに**大規模救助事案**として対応されたい。
+管内全部署の救助隊、救急隊の出場を要請。ドクターヘリのランデブーポイント設定を開始する。警察による全面的な交通規制が必須。
+当隊はバスからの救出活動を主眼とする。以上、岡崎51。」
+                    </p>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white mt-12">
+        <div class="container mx-auto px-4 py-5 text-center text-sm">
+            <p>この報告が、一人でも多くの命を救うための第一歩となる。</p>
+        </div>
+    </footer>
+
+</body>
+</html>
