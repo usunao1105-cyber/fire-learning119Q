@@ -127,7 +127,7 @@ e-Learning119Q  救急業務
 
     <div class="card">
       <div class="lesson-title">Lesson 5</div>
-      <div class="lesson-desc">AEDの使用と注意事項</div>
+      <div class="lesson-desc">場指揮官・最先着救急隊用 初動報告</div>
       <a href="lesson5/index.html" class="button">▶ 学習する</a>
     </div>
 
