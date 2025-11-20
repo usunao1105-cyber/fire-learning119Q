@@ -139,7 +139,7 @@ e-Learning119Q  救急業務
 
     <div class="card">
       <div class="lesson-title">Lesson 7</div>
-      <div class="lesson-desc">熱傷・中毒・低体温症</div>
+      <div class="lesson-desc">交通事故MEMO</div>
       <a href="lesson7/index.html" class="button">▶ 学習する</a>
     </div>
 
