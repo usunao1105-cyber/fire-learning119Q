@@ -133,7 +133,7 @@ e-Learning119Q  救急業務
 
     <div class="card">
       <div class="lesson-title">Lesson 6</div>
-      <div class="lesson-desc">呼吸困難・気道異物除去</div>
+      <div class="lesson-desc">EMS MEMO</div>
       <a href="lesson6/index.html" class="button">▶ 学習する</a>
     </div>
 
