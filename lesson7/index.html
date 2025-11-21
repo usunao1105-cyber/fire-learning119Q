@@ -3,674 +3,552 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>交通救助メモ</title>
+    <title>EMS MEMO - ParamedicLog</title>
     
-    <!-- Tailwind CSS (Design) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
-    <!-- Babel (JSX Compiler) -->
+    <!-- Babel (for JSX) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        /* スマホでのタップ操作を快適にするための調整 */
+        /* モバイル向けの調整 */
         body {
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
         }
-        /* iOSでの入力ズーム防止 */
-        input, select, textarea {
-            font-size: 16px !important; 
+        /* ちらつき防止 */
+        .cloak {
+            display: none;
         }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100">
+<body class="bg-gray-100 text-gray-900">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef, useCallback } = React;
 
-        // --- Icons (SVG Components to avoid external dependencies) ---
-        const IconBase = ({ children, className }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        // --- Icons (Lucideの簡易実装) ---
+        const Icon = ({ size = 24, className = "", children }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 {children}
             </svg>
         );
 
-        const Car = ({ className }) => (
-            <IconBase className={className}>
-                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
-                <circle cx="7" cy="17" r="2" />
-                <circle cx="17" cy="17" r="2" />
-                <path d="M14 17H9" />
-            </IconBase>
-        );
-        const User = ({ className }) => (
-            <IconBase className={className}>
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-            </IconBase>
-        );
-        const Trash2 = ({ className }) => (
-            <IconBase className={className}>
-                <path d="M3 6h18" />
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                <line x1="10" x2="10" y1="11" y2="17" />
-                <line x1="14" x2="14" y1="11" y2="17" />
-            </IconBase>
-        );
-        const Plus = ({ className }) => (
-            <IconBase className={className}>
-                <path d="M5 12h14" />
-                <path d="M12 5v14" />
-            </IconBase>
-        );
-        const Clipboard = ({ className }) => (
-            <IconBase className={className}>
-                <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
-                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-            </IconBase>
-        );
-        const AlertTriangle = ({ className }) => (
-            <IconBase className={className}>
-                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-                <path d="M12 9v4" />
-                <path d="M12 17h.01" />
-            </IconBase>
-        );
-        const Shield = ({ className }) => (
-            <IconBase className={className}>
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-            </IconBase>
-        );
-        const RotateCcw = ({ className }) => (
-            <IconBase className={className}>
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-            </IconBase>
-        );
-        const XIcon = ({ className }) => (
-            <IconBase className={className}>
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-            </IconBase>
-        );
-        const Copy = ({ className }) => (
-            <IconBase className={className}>
-                <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-            </IconBase>
-        );
-        const Check = ({ className }) => (
-            <IconBase className={className}>
-                <path d="M20 6 9 17l-5-5" />
-            </IconBase>
-        );
+        const Activity = (props) => <Icon {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></Icon>;
+        const Clock = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></Icon>;
+        const Mic = (props) => <Icon {...props}><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></Icon>;
+        const MicOff = (props) => <Icon {...props}><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></Icon>;
+        const Send = (props) => <Icon {...props}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Icon>;
+        const FileText = (props) => <Icon {...props}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></Icon>;
+        const Trash2 = (props) => <Icon {...props}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></Icon>;
+        const Copy = (props) => <Icon {...props}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></Icon>;
+        const Save = (props) => <Icon {...props}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></Icon>;
+        const RotateCcw = (props) => <Icon {...props}><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></Icon>;
+        const ChevronDown = (props) => <Icon {...props}><polyline points="6 9 12 15 18 9"/></Icon>;
+        const ChevronUp = (props) => <Icon {...props}><polyline points="18 15 12 9 6 15"/></Icon>;
+        const AlertTriangle = (props) => <Icon {...props}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></Icon>;
+        const StopCircle = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6"/></Icon>;
+        const Play = (props) => <Icon {...props}><polygon points="5 3 19 12 5 21 5 3"/></Icon>;
+        const Hash = (props) => <Icon {...props}><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></Icon>;
+        const Flag = (props) => <Icon {...props}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></Icon>;
 
-        // --- Main Component ---
-        const TrafficRescueMemo = () => {
-            // --- State Management ---
-            const loadInitialData = () => {
-                try {
-                    const saved = localStorage.getItem('traffic_rescue_data');
-                    if (saved) return JSON.parse(saved);
-                } catch (e) {
-                    console.error("Load failed", e);
-                }
-                return null;
-            };
-
-            const initialData = loadInitialData();
-
-            const [sceneInfo, setSceneInfo] = useState(initialData?.sceneInfo || {
-                location: '',
-                time: '',
-                situation: '車両相互の事故',
-            });
-
-            const [vehicles, setVehicles] = useState(initialData?.vehicles || [
-                {
-                    id: Date.now(),
-                    type: '普通車',
-                    plate: '',
-                    damage: '中破',
-                    occupants: []
-                }
-            ]);
-
-            const [others, setOthers] = useState(initialData?.others || {
-                police: '',
-                witness: '',
-                fireDept: ''
-            });
-
-            const [notification, setNotification] = useState(null);
-            
-            // Modals State
-            const [showReportModal, setShowReportModal] = useState(false);
-            const [reportText, setReportText] = useState('');
-            
-            const [showDeleteModal, setShowDeleteModal] = useState(false);
-            const [deleteTarget, setDeleteTarget] = useState(null);
-
-            // --- Auto Save ---
-            useEffect(() => {
-                const dataToSave = { sceneInfo, vehicles, others };
-                localStorage.setItem('traffic_rescue_data', JSON.stringify(dataToSave));
-            }, [sceneInfo, vehicles, others]);
-
-            // --- Constants ---
-            const TRIAGE_COLORS = {
-                none: 'bg-gray-700 text-gray-300',
-                green: 'bg-green-600 text-white',
-                yellow: 'bg-yellow-500 text-black',
-                red: 'bg-red-600 text-white',
-                black: 'bg-gray-900 text-gray-400 border border-gray-600'
-            };
-
-            const TRIAGE_LABELS = {
-                none: '未定',
-                green: '緑(軽症)',
-                yellow: '黄(中等)',
-                red: '赤(重症)',
-                black: '黒(死亡)'
-            };
-
-            // --- Helper Functions ---
-            const showNotification = (msg) => {
-                setNotification(msg);
-                setTimeout(() => setNotification(null), 3000);
-            };
-
-            // --- Deletion Logic ---
-            const requestDeleteVehicle = (id) => {
-                setDeleteTarget({ type: 'vehicle', vehicleId: id });
-                setShowDeleteModal(true);
-            };
-
-            const requestDeleteOccupant = (vId, oId) => {
-                setDeleteTarget({ type: 'occupant', vehicleId: vId, occupantId: oId });
-                setShowDeleteModal(true);
-            };
-
-            const requestReset = () => {
-                setDeleteTarget({ type: 'reset' });
-                setShowDeleteModal(true);
-            };
-
-            const confirmDelete = () => {
-                if (!deleteTarget) return;
-
-                if (deleteTarget.type === 'vehicle') {
-                    setVehicles(prev => prev.filter(v => v.id !== deleteTarget.vehicleId));
-                    showNotification('車両を削除しました');
-                } else if (deleteTarget.type === 'occupant') {
-                    setVehicles(prev => prev.map(v => {
-                        if (v.id === deleteTarget.vehicleId) {
-                            return { ...v, occupants: v.occupants.filter(o => o.id !== deleteTarget.occupantId) };
-                        }
-                        return v;
-                    }));
-                    showNotification('乗員を削除しました');
-                } else if (deleteTarget.type === 'reset') {
-                    setVehicles([{ id: Date.now(), type: '普通車', plate: '', damage: '中破', occupants: [] }]);
-                    setSceneInfo({ location: '', time: '', situation: '車両相互の事故' });
-                    setOthers({ police: '', witness: '', fireDept: '' });
-                    showNotification('リセット完了');
-                }
-
-                setShowDeleteModal(false);
-                setDeleteTarget(null);
-            };
-
-            // --- Data Handlers ---
-            const updateScene = (field, value) => setSceneInfo(prev => ({ ...prev, [field]: value }));
-            
-            const addVehicle = () => {
-                setVehicles(prev => [
-                    ...prev,
-                    { id: Date.now(), type: '普通車', plate: '', damage: '小破', occupants: [] }
-                ]);
-            };
-
-            const updateVehicle = (id, field, value) => {
-                setVehicles(prev => prev.map(v => v.id === id ? { ...v, [field]: value } : v));
-            };
-
-            const addOccupant = (vehicleId) => {
-                setVehicles(prev => prev.map(v => {
-                    if (v.id === vehicleId) {
-                        return {
-                            ...v,
-                            occupants: [...v.occupants, {
-                                id: Date.now(), position: '運転席', ageSex: '', triage: 'none', trapped: false, extricated: false, notes: ''
-                            }]
-                        };
-                    }
-                    return v;
-                }));
-            };
-
-            const updateOccupant = (vehicleId, occupantId, field, value) => {
-                setVehicles(prev => prev.map(v => {
-                    if (v.id === vehicleId) {
-                        return {
-                            ...v,
-                            occupants: v.occupants.map(o => o.id === occupantId ? { ...o, [field]: value } : o)
-                        };
-                    }
-                    return v;
-                }));
-            };
-
-            // --- Stats & Report ---
-            const stats = vehicles.reduce((acc, v) => {
-                acc.totalVehicles += 1;
-                acc.totalOccupants += v.occupants.length;
-                v.occupants.forEach(o => {
-                    if (o.trapped && !o.extricated) acc.trapped += 1;
-                    if (o.triage === 'red') acc.red += 1;
-                    if (o.triage === 'yellow') acc.yellow += 1;
-                    if (o.triage === 'black') acc.black += 1;
-                });
-                return acc;
-            }, { totalVehicles: 0, totalOccupants: 0, trapped: 0, red: 0, yellow: 0, black: 0 });
-
-            const handleGenerateReport = () => {
-                let text = `【交通救助メモ】\n`;
-                text += `場所: ${sceneInfo.location || '未入力'}\n`;
-                text += `概要: ${sceneInfo.situation}\n`;
-                text += `集計: 車両${stats.totalVehicles}台 / 傷病者${stats.totalOccupants}名 (残${stats.trapped}名)\n`;
-                text += `------------------\n`;
-
-                vehicles.forEach((v, index) => {
-                    text += `[車両${index + 1}] ${v.type} (${v.plate || 'No不明'}) - ${v.damage}\n`;
-                    if (v.occupants.length === 0) {
-                        text += `  └ 乗員情報なし\n`;
-                    } else {
-                        v.occupants.forEach(o => {
-                            const trappedStatus = o.trapped ? (o.extricated ? '【救出済】' : '【★要救助】') : '';
-                            const triageText = TRIAGE_LABELS[o.triage];
-                            text += `  └ ${o.position}: ${o.ageSex || '年齢不明'} [${triageText}] ${trappedStatus} ${o.notes}\n`;
-                        });
-                    }
-                });
-                
-                text += `------------------\n`;
-                if (others.police) text += `警察: ${others.police}\n`;
-                if (others.witness) text += `目撃者: ${others.witness}\n`;
-                if (others.fireDept) text += `活動隊: ${others.fireDept}\n`;
-
-                setReportText(text);
-                setShowReportModal(true);
-            };
-
-            // Fix for clipboard copying
-            const copyToClipboard = () => {
-                try {
-                    const textArea = document.createElement("textarea");
-                    textArea.value = reportText;
-                    textArea.style.position = "fixed";
-                    textArea.style.left = "-9999px";
-                    textArea.style.top = "0";
-                    document.body.appendChild(textArea);
-                    textArea.focus();
-                    textArea.select();
-                    
-                    const successful = document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    
-                    if (successful) {
-                        showNotification('コピー完了！');
-                        setShowReportModal(false);
-                    } else {
-                        showNotification('コピーに失敗しました');
-                    }
-                } catch (err) {
-                    console.error('Fallback copy failed', err);
-                    showNotification('エラーが発生しました');
-                }
-            };
-
-            // --- Render ---
-            return (
-                <div className="min-h-screen bg-slate-900 text-slate-100 pb-32 font-sans relative">
-                    {/* Header */}
-                    <header className="bg-blue-900 p-4 sticky top-0 z-40 shadow-lg flex justify-between items-center">
-                        <h1 className="text-2xl font-bold flex items-center gap-3">
-                            <Car className="w-8 h-8 text-yellow-400" />
-                            交通救助メモ
-                        </h1>
-                        <button onClick={requestReset} className="p-3 bg-slate-700 rounded-full hover:bg-slate-600">
-                            <RotateCcw className="w-6 h-6 text-gray-300" />
-                        </button>
-                    </header>
-
-                    {/* Dashboard Stats */}
-                    <div className="grid grid-cols-4 gap-2 p-2 bg-slate-800 border-b border-slate-700 sticky top-20 z-30 shadow-md">
-                        <div className="bg-slate-700 p-2 rounded text-center">
-                            <div className="text-sm text-gray-300 mb-1">車両数</div>
-                            <div className="text-3xl font-bold text-white">{stats.totalVehicles}</div>
-                        </div>
-                        <div className="bg-slate-700 p-2 rounded text-center">
-                            <div className="text-sm text-gray-300 mb-1">傷病者</div>
-                            <div className="text-3xl font-bold text-white">{stats.totalOccupants}</div>
-                        </div>
-                        <div className="bg-red-900/60 p-2 rounded text-center border-2 border-red-600">
-                            <div className="text-sm text-red-200 font-bold mb-1">要救助</div>
-                            <div className="text-3xl font-bold text-white">{stats.trapped}</div>
-                        </div>
-                        <div className="bg-slate-700 p-1 rounded text-center flex flex-col justify-center items-center">
-                            <div className="flex flex-col gap-0 w-full px-1">
-                                <div className="text-sm text-red-400 font-bold border-b border-slate-600">赤 {stats.red}</div>
-                                <div className="text-sm text-yellow-400 font-bold border-b border-slate-600">黄 {stats.yellow}</div>
-                                <div className="text-xs text-gray-400 font-bold">黒 {stats.black}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <main className="p-3 space-y-8">
-                        {/* Scene Info */}
-                        <section className="space-y-4">
-                            <div>
-                                <label className="text-gray-400 text-sm mb-1 block">事故形態</label>
-                                <input 
-                                    type="text" 
-                                    placeholder="例: 正面衝突" 
-                                    className="w-full bg-slate-800 border border-slate-600 rounded p-4 text-lg font-bold text-white focus:border-blue-500 focus:outline-none"
-                                    value={sceneInfo.situation}
-                                    onChange={(e) => updateScene('situation', e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-gray-400 text-sm mb-1 block">場所・目標</label>
-                                <input 
-                                    type="text" 
-                                    placeholder="場所を入力" 
-                                    className="w-full bg-slate-800 border border-slate-600 rounded p-4 text-lg font-bold text-white focus:border-blue-500 focus:outline-none"
-                                    value={sceneInfo.location}
-                                    onChange={(e) => updateScene('location', e.target.value)}
-                                />
-                            </div>
-                        </section>
-
-                        {/* Vehicles List */}
-                        <div className="space-y-6">
-                            {vehicles.map((vehicle, vIndex) => (
-                                <div key={vehicle.id} className="bg-slate-800 rounded-xl border border-slate-600 overflow-hidden shadow-lg">
-                                    {/* Vehicle Header */}
-                                    <div className="bg-slate-700 p-4 flex justify-between items-center border-b border-slate-600">
-                                        <div className="flex items-center gap-3 flex-1">
-                                            <span className="bg-blue-600 text-white text-lg px-3 py-1 rounded font-bold whitespace-nowrap">車両 {vIndex + 1}</span>
-                                            <select 
-                                                className="bg-slate-800 border border-slate-500 text-lg font-bold rounded p-2 flex-1 max-w-[180px] h-12"
-                                                value={vehicle.type}
-                                                onChange={(e) => updateVehicle(vehicle.id, 'type', e.target.value)}
-                                            >
-                                                <option>普通車</option>
-                                                <option>軽乗用</option>
-                                                <option>トラック</option>
-                                                <option>バス</option>
-                                                <option>二輪</option>
-                                                <option>歩行者</option>
-                                            </select>
-                                        </div>
-                                        <button onClick={() => requestDeleteVehicle(vehicle.id)} className="text-gray-400 hover:text-red-400 p-3 bg-slate-800 rounded ml-2">
-                                            <Trash2 className="w-6 h-6" />
-                                        </button>
-                                    </div>
-
-                                    <div className="p-4 space-y-4">
-                                        <div className="flex gap-3">
-                                            <input 
-                                                type="text" 
-                                                placeholder="No.下4桁" 
-                                                className="flex-1 bg-slate-900 border border-slate-600 rounded p-3 text-lg font-bold h-14"
-                                                value={vehicle.plate}
-                                                onChange={(e) => updateVehicle(vehicle.id, 'plate', e.target.value)}
-                                            />
-                                            <select 
-                                                className="bg-slate-900 border border-slate-600 rounded p-2 text-lg font-bold w-32 h-14"
-                                                value={vehicle.damage}
-                                                onChange={(e) => updateVehicle(vehicle.id, 'damage', e.target.value)}
-                                            >
-                                                <option>小破</option>
-                                                <option>中破</option>
-                                                <option>大破</option>
-                                                <option>全焼</option>
-                                            </select>
-                                        </div>
-
-                                        {/* Occupants List */}
-                                        <div className="space-y-4">
-                                            {vehicle.occupants.map((occupant) => (
-                                                <div key={occupant.id} className="bg-slate-900/50 p-3 rounded-lg border-2 border-slate-700">
-                                                    <div className="flex justify-between items-center mb-3">
-                                                        <div className="flex gap-3 items-center flex-1">
-                                                            <User className="w-6 h-6 text-gray-400" />
-                                                            <select 
-                                                                className="bg-transparent text-blue-300 text-xl font-bold border-b border-blue-900 py-1 flex-1"
-                                                                value={occupant.position}
-                                                                onChange={(e) => updateOccupant(vehicle.id, occupant.id, 'position', e.target.value)}
-                                                            >
-                                                                <option>運転席</option>
-                                                                <option>助手席</option>
-                                                                <option>後部右</option>
-                                                                <option>後部左</option>
-                                                                <option>後中/他</option>
-                                                                <option>車外放出</option>
-                                                            </select>
-                                                        </div>
-                                                        <button onClick={() => requestDeleteOccupant(vehicle.id, occupant.id)} className="text-gray-500 hover:text-red-500 p-2 bg-slate-800 rounded">
-                                                            <Trash2 className="w-6 h-6" />
-                                                        </button>
-                                                    </div>
-                                                    
-                                                    <div className="grid grid-cols-12 gap-3 mb-3">
-                                                        <input 
-                                                            type="text" 
-                                                            placeholder="30代男" 
-                                                            className="col-span-5 bg-slate-800 border border-slate-600 rounded px-3 py-3 text-lg font-bold text-center"
-                                                            value={occupant.ageSex}
-                                                            onChange={(e) => updateOccupant(vehicle.id, occupant.id, 'ageSex', e.target.value)}
-                                                        />
-                                                        <select 
-                                                            className={`col-span-7 rounded px-2 py-3 text-lg font-bold border-2 border-slate-500 ${TRIAGE_COLORS[occupant.triage]}`}
-                                                            value={occupant.triage}
-                                                            onChange={(e) => updateOccupant(vehicle.id, occupant.id, 'triage', e.target.value)}
-                                                        >
-                                                            {Object.entries(TRIAGE_LABELS).map(([key, label]) => (
-                                                                <option key={key} value={key} className="bg-slate-800 text-white">
-                                                                    {label}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-
-                                                    <div className="flex flex-col gap-3">
-                                                        <button 
-                                                            onClick={() => {
-                                                                if (!occupant.trapped) {
-                                                                    updateOccupant(vehicle.id, occupant.id, 'trapped', true);
-                                                                } else if (occupant.trapped && !occupant.extricated) {
-                                                                    updateOccupant(vehicle.id, occupant.id, 'extricated', true);
-                                                                } else {
-                                                                    updateOccupant(vehicle.id, occupant.id, 'trapped', false);
-                                                                    updateOccupant(vehicle.id, occupant.id, 'extricated', false);
-                                                                }
-                                                            }}
-                                                            className={`w-full py-4 rounded-lg text-lg border-2 flex items-center justify-center gap-3 font-bold transition-colors
-                                                                ${!occupant.trapped 
-                                                                    ? 'border-slate-600 text-gray-400 bg-slate-800' 
-                                                                    : (occupant.extricated 
-                                                                        ? 'bg-green-900 border-green-500 text-green-300' 
-                                                                        : 'bg-red-900 border-red-500 text-red-100 animate-pulse')
-                                                                }`}
-                                                        >
-                                                            <AlertTriangle className={`w-6 h-6 ${occupant.trapped && !occupant.extricated ? 'animate-bounce' : ''}`} />
-                                                            {!occupant.trapped ? '閉じ込め無' : (occupant.extricated ? '【 救出完了 】' : '★ 要救助 ★')}
-                                                        </button>
-                                                        
-                                                        <input 
-                                                            type="text" 
-                                                            placeholder="メモ (痛い箇所など)" 
-                                                            className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-3 text-lg"
-                                                            value={occupant.notes}
-                                                            onChange={(e) => updateOccupant(vehicle.id, occupant.id, 'notes', e.target.value)}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                            
-                                            <button 
-                                                onClick={() => addOccupant(vehicle.id)}
-                                                className="w-full py-4 border-2 border-dashed border-slate-500 rounded-lg text-slate-300 text-lg font-bold hover:bg-slate-700 hover:text-blue-300 flex items-center justify-center gap-3"
-                                            >
-                                                <Plus className="w-6 h-6" />
-                                                乗員を追加
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-
-                            <button 
-                                onClick={addVehicle}
-                                className="w-full bg-blue-800 hover:bg-blue-700 text-white text-xl font-bold py-5 rounded-xl shadow-xl flex items-center justify-center gap-3 border-2 border-blue-400"
-                            >
-                                <Car className="w-8 h-8" />
-                                車両を追加
-                            </button>
-                        </div>
-
-                        {/* Others / Staff */}
-                        <section className="bg-slate-800 p-4 rounded-xl border border-slate-700 mt-8">
-                            <h2 className="text-lg font-bold text-gray-300 mb-4 flex items-center gap-2 border-b border-slate-600 pb-2">
-                                <Shield className="w-6 h-6" /> 関係者・活動隊
-                            </h2>
-                            <div className="space-y-4">
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-sm text-gray-400">警察</span>
-                                    <input 
-                                        type="text" 
-                                        placeholder="所属・氏名"
-                                        className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-lg h-12"
-                                        value={others.police}
-                                        onChange={(e) => setOthers({...others, police: e.target.value})}
-                                    />
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-sm text-gray-400">目撃者</span>
-                                    <input 
-                                        type="text" 
-                                        placeholder="連絡先・氏名"
-                                        className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-lg h-12"
-                                        value={others.witness}
-                                        onChange={(e) => setOthers({...others, witness: e.target.value})}
-                                    />
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-sm text-gray-400">活動隊</span>
-                                    <input 
-                                        type="text" 
-                                        placeholder="隊名"
-                                        className="w-full bg-slate-900 border border-slate-600 rounded p-3 text-lg h-12"
-                                        value={others.fireDept}
-                                        onChange={(e) => setOthers({...others, fireDept: e.target.value})}
-                                    />
-                                </div>
-                            </div>
-                        </section>
-                    </main>
-
-                    {/* Floating Copy Button */}
-                    <div className="fixed bottom-8 right-6 z-40">
-                        <button 
-                            onClick={handleGenerateReport}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white w-20 h-20 rounded-full shadow-2xl shadow-black flex items-center justify-center border-4 border-emerald-400 transition-transform active:scale-95"
-                        >
-                            <Clipboard className="w-10 h-10" />
-                        </button>
-                    </div>
-
-                    {/* Report Modal */}
-                    {showReportModal && (
-                        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-2">
-                            <div className="bg-slate-800 w-full h-full md:h-auto md:max-w-lg rounded-xl shadow-2xl border border-slate-700 flex flex-col">
-                                <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900">
-                                    <h3 className="text-xl font-bold text-emerald-400 flex items-center gap-2">
-                                        <Clipboard className="w-6 h-6" /> 活動レポート
-                                    </h3>
-                                    <button onClick={() => setShowReportModal(false)} className="p-3 bg-slate-700 rounded-full">
-                                        <XIcon className="w-6 h-6" />
-                                    </button>
-                                </div>
-                                <div className="p-4 flex-1 overflow-auto bg-slate-900">
-                                    <textarea 
-                                        className="w-full h-full min-h-[300px] bg-slate-800 border border-slate-600 rounded p-4 text-lg font-mono text-white leading-relaxed focus:outline-none focus:border-emerald-500"
-                                        value={reportText}
-                                        onChange={(e) => setReportText(e.target.value)}
-                                    />
-                                </div>
-                                <div className="p-4 border-t border-slate-700 bg-slate-900">
-                                    <button 
-                                        onClick={copyToClipboard}
-                                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xl font-bold py-4 rounded-xl flex items-center justify-center gap-3 border-2 border-emerald-400"
-                                    >
-                                        <Copy className="w-6 h-6" />
-                                        コピーして閉じる
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Delete Confirmation Modal */}
-                    {showDeleteModal && (
-                        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-                            <div className="bg-slate-800 w-full max-w-sm rounded-xl shadow-2xl border border-slate-700 p-8 text-center">
-                                <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-6" />
-                                <h3 className="text-2xl font-bold text-white mb-4">削除しますか？</h3>
-                                <p className="text-gray-300 text-lg mb-8">
-                                    {deleteTarget?.type === 'reset' 
-                                        ? '入力データが全て消えます。'
-                                        : 'この項目を削除します。'
-                                    }
-                                </p>
-                                <div className="flex flex-col gap-4">
-                                    <button 
-                                        onClick={confirmDelete}
-                                        className="w-full py-4 bg-red-600 hover:bg-red-500 rounded-xl text-white text-xl font-bold border-2 border-red-400"
-                                    >
-                                        削除実行
-                                    </button>
-                                    <button 
-                                        onClick={() => setShowDeleteModal(false)}
-                                        className="w-full py-4 bg-slate-700 hover:bg-slate-600 rounded-xl text-gray-300 text-xl font-bold"
-                                    >
-                                        キャンセル
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Notification Toast */}
-                    {notification && (
-                        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-emerald-600 text-white px-8 py-6 rounded-2xl shadow-2xl text-xl font-bold animate-bounce z-50 flex items-center gap-3 border-2 border-white">
-                            <Check className="w-8 h-8" /> {notification}
-                        </div>
-                    )}
-                </div>
-            );
+        // --- Helper Functions ---
+        const formatTime = (date) => {
+            return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         };
 
+        const formatElapsed = (seconds) => {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        };
+
+        // --- Constants ---
+        const QUICK_ACTIONS = [
+            { label: '現着', type: 'milestone' },
+            { label: '接触', type: 'milestone' },
+            { label: '車内収容', type: 'milestone' },
+            { label: '病院着', type: 'milestone' },
+            { label: '心電図', type: 'treatment' }, // 赤色 (treatment)
+            { label: '酸素投与', type: 'treatment' },
+            { label: 'CPR開始', type: 'treatment' },
+            { label: '除細動', type: 'treatment' },
+            { label: '静脈路確保', type: 'treatment' },
+            { label: 'アドレナリン', type: 'treatment' },
+            { label: 'バイタル測定', type: 'vitals' },
+            { label: 'ROSC', type: 'vitals' }, // 緑色 (vitals)
+            { label: '指示要請', type: 'vitals' }, // 緑色 (vitals)
+        ];
+
+        // --- Main Component ---
+        function App() {
+            // --- State ---
+            const [logs, setLogs] = useState([]);
+            const [inputText, setInputText] = useState('');
+            const [isListening, setIsListening] = useState(false);
+            const [startTime, setStartTime] = useState(null);
+            const [endTime, setEndTime] = useState(null);
+            const [elapsed, setElapsed] = useState(0);
+            const [showExport, setShowExport] = useState(false);
+            const [showResetConfirm, setShowResetConfirm] = useState(false);
+            const [quickActionsOpen, setQuickActionsOpen] = useState(true);
+            const [incidentNumber, setIncidentNumber] = useState('');
+            const [periodCount, setPeriodCount] = useState(1);
+            
+            // Refs
+            const recognitionRef = useRef(null);
+            const logsEndRef = useRef(null);
+
+            // --- Timer Logic ---
+            useEffect(() => {
+                let interval;
+                if (startTime && !endTime) {
+                interval = setInterval(() => {
+                    const now = new Date();
+                    const diff = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+                    setElapsed(diff);
+                }, 1000);
+                }
+                return () => clearInterval(interval);
+            }, [startTime, endTime]);
+
+            // Auto-scroll
+            useEffect(() => {
+                logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [logs]);
+
+            // --- Speech Recognition Setup ---
+            useEffect(() => {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    recognitionRef.current = new SpeechRecognition();
+                    recognitionRef.current.continuous = false;
+                    recognitionRef.current.interimResults = false;
+                    recognitionRef.current.lang = 'ja-JP';
+
+                    recognitionRef.current.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        setInputText((prev) => (prev ? `${prev} ${transcript}` : transcript));
+                        setIsListening(false);
+                    };
+
+                    recognitionRef.current.onerror = (event) => {
+                        console.error('Speech recognition error', event.error);
+                        setIsListening(false);
+                    };
+
+                    recognitionRef.current.onend = () => {
+                        setIsListening(false);
+                    };
+                }
+            }, []);
+
+            // --- Actions ---
+            const handleStartActivity = () => {
+                if (!startTime) {
+                const now = new Date();
+                setStartTime(now);
+                setEndTime(null);
+                addLog('活動開始 / タイム計測スタート', 'milestone', now, 0);
+                }
+            };
+
+            const handleEndActivity = () => {
+                const now = new Date();
+                setEndTime(now);
+                addLog('活動終了 / タイム計測ストップ', 'milestone', now);
+                setShowExport(true);
+            };
+
+            const handlePeriod = () => {
+                const now = new Date();
+                addLog(`--- 第 ${periodCount} ピリオド ---`, 'milestone', now);
+                setPeriodCount(prev => prev + 1);
+            };
+
+            const handleResumeActivity = () => {
+                const now = new Date();
+                setEndTime(null);
+                addLog('活動再開', 'milestone', now);
+            };
+
+            const handleResetClick = () => {
+                setShowResetConfirm(true);
+            };
+
+            const executeReset = () => {
+                setLogs([]);
+                setStartTime(null);
+                setEndTime(null);
+                setElapsed(0);
+                setInputText('');
+                setIncidentNumber('');
+                setPeriodCount(1);
+                setShowExport(false);
+                setShowResetConfirm(false);
+            };
+
+            const addLog = (content, type = 'note', customTime, customElapsed) => {
+                const now = customTime || new Date();
+                let currentElapsed = 0;
+                
+                if (startTime) {
+                currentElapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+                } else if (!startTime && !customTime) {
+                    setStartTime(now);
+                    currentElapsed = 0;
+                } else if (customElapsed !== undefined) {
+                    currentElapsed = customElapsed;
+                }
+
+                const newLog = {
+                id: Math.random().toString(36).substr(2, 9),
+                timestamp: now,
+                elapsedSeconds: currentElapsed,
+                content,
+                type,
+                };
+                setLogs((prev) => [...prev, newLog]);
+            };
+
+            const handleManualSubmit = (e) => {
+                e?.preventDefault();
+                if (!inputText.trim()) return;
+                addLog(inputText, 'note');
+                setInputText('');
+            };
+
+            const toggleListening = () => {
+                if (!recognitionRef.current) {
+                alert('お使いのブラウザは音声入力をサポートしていません。');
+                return;
+                }
+                if (isListening) {
+                recognitionRef.current.stop();
+                } else {
+                recognitionRef.current.start();
+                setIsListening(true);
+                }
+            };
+
+            const copyToClipboard = () => {
+                const header = incidentNumber ? `--- 事案番号: ${incidentNumber} ---\n` : '';
+                
+                const logText = logs.map(log => {
+                const timeStr = formatTime(log.timestamp);
+                const elapsedStr = formatElapsed(log.elapsedSeconds);
+                return `[${timeStr}] (+${elapsedStr}) ${log.type === 'treatment' ? '【処置】' : ''} ${log.content}`;
+                }).join('\n');
+                
+                const textToCopy = header + `\n--- 活動ログ ---\n` + logText;
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(textToCopy)
+                        .then(() => alert('クリップボードにコピーしました'))
+                        .catch(err => {
+                            fallbackCopy(textToCopy);
+                        });
+                } else {
+                    fallbackCopy(textToCopy);
+                }
+            };
+
+            const fallbackCopy = (text) => {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                textArea.style.top = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        alert('クリップボードにコピーしました');
+                    } else {
+                        alert('コピーに失敗しました');
+                    }
+                } catch (err) {
+                    console.error('Fallback: Oops, unable to copy', err);
+                    alert('コピーに失敗しました');
+                }
+                document.body.removeChild(textArea);
+            }
+
+            const getLogColor = (type) => {
+                switch (type) {
+                case 'treatment': return 'bg-red-50 border-l-4 border-red-500 text-red-900';
+                case 'milestone': return 'bg-blue-50 border-l-4 border-blue-500 text-blue-900 font-bold';
+                case 'vitals': return 'bg-green-50 border-l-4 border-green-500 text-green-900';
+                default: return 'bg-white border-l-4 border-gray-300 text-gray-800';
+                }
+            };
+
+            return (
+                <div className="flex flex-col h-screen bg-gray-100 font-sans max-w-md mx-auto shadow-2xl overflow-hidden relative">
+                
+                {/* --- Header: Timer Area --- */}
+                <div className="bg-slate-900 text-white p-4 shadow-md z-10">
+                    <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-2">
+                        <Activity className="text-red-500 animate-pulse" size={20} />
+                        <h1 className="font-bold text-lg tracking-wider">EMS MEMO</h1>
+                    </div>
+                    <div className="text-xs text-gray-400">
+                        {endTime ? `End: ${formatTime(endTime)}` : formatTime(new Date())}
+                    </div>
+                    </div>
+                    
+                    {/* --- Incident Number --- */}
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                        <div className="flex items-center bg-slate-800 rounded-lg p-2 flex-1">
+                            <Hash size={18} className="text-blue-400 mr-2" />
+                            <input
+                                type="text"
+                                placeholder="事案番号を入力"
+                                value={incidentNumber}
+                                onChange={(e) => setIncidentNumber(e.target.value)}
+                                className="flex-1 bg-transparent text-white placeholder-gray-500 border-0 p-0 text-sm focus:ring-0 outline-none font-mono"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="flex items-end justify-between gap-4">
+                    <div>
+                        <p className="text-xs text-gray-400 uppercase mb-1">Elapsed Time</p>
+                        <div className={`text-4xl font-mono font-bold tracking-tighter tabular-nums ${endTime ? 'text-yellow-400' : 'text-white'}`}>
+                        {formatElapsed(elapsed)}
+                        </div>
+                    </div>
+                    
+                    <div className="flex flex-col gap-2 items-end flex-1">
+                        {!startTime ? (
+                        <button 
+                            onClick={handleStartActivity}
+                            className="bg-green-600 hover:bg-green-500 text-white px-4 py-3 rounded shadow-lg font-bold text-sm flex items-center gap-2 transition-transform active:scale-95"
+                        >
+                            <Clock size={16} />
+                            計測開始
+                        </button>
+                        ) : !endTime ? (
+                        <>
+                            <button 
+                                onClick={handlePeriod}
+                                className="bg-green-600 hover:bg-green-500 text-white px-4 py-3 rounded shadow-lg font-bold text-sm flex items-center gap-2 transition-transform active:scale-95 w-full justify-center"
+                            >
+                                <Flag size={16} />
+                                ピリオド {periodCount}
+                            </button>
+                            <button 
+                                onClick={handleEndActivity}
+                                className="bg-red-600 hover:bg-red-500 text-white px-4 py-3 rounded shadow-lg font-bold text-sm flex items-center gap-2 transition-transform active:scale-95 w-full justify-center"
+                            >
+                                <StopCircle size={16} />
+                                活動終了
+                            </button>
+                        </>
+                        ) : (
+                        <div className="flex flex-col gap-2 w-full min-w-[100px]">
+                            <button 
+                            onClick={handleResetClick}
+                            className="bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded text-xs flex items-center gap-1 justify-center w-full"
+                            >
+                            <RotateCcw size={12} />
+                            リセット
+                            </button>
+                            <button 
+                            onClick={handleResumeActivity}
+                            className="bg-blue-900 hover:bg-blue-800 text-blue-200 px-3 py-2 rounded text-xs flex items-center gap-1 justify-center w-full"
+                            >
+                            <Play size={10} />
+                            再開
+                            </button>
+                        </div>
+                        )}
+                    </div>
+                    </div>
+                </div>
+
+                {/* --- Logs Area --- */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-100 pb-24">
+                    {logs.length === 0 && (
+                    <div className="text-center text-gray-400 mt-10 flex flex-col items-center">
+                        <FileText size={48} className="mb-2 opacity-20" />
+                        <p>活動ログがここに表示されます</p>
+                        <p className="text-xs mt-2">音声入力または下のボタンで記録</p>
+                    </div>
+                    )}
+                    
+                    {logs.map((log) => (
+                    <div key={log.id} className={`p-3 rounded shadow-sm flex flex-col gap-1 ${getLogColor(log.type)}`}>
+                        <div className="flex justify-between items-start">
+                        <span className="text-sm font-medium">{log.content}</span>
+                        <button 
+                            onClick={() => setLogs(logs.filter(l => l.id !== log.id))}
+                            className="text-gray-400 hover:text-red-500 ml-2"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                        </div>
+                        <div className="flex justify-between items-center mt-1 text-[10px] opacity-70 font-mono">
+                            <span>Time: {formatTime(log.timestamp)}</span>
+                            <span>+{formatElapsed(log.elapsedSeconds)}</span>
+                        </div>
+                    </div>
+                    ))}
+                    <div ref={logsEndRef} />
+                </div>
+
+                {/* --- Quick Actions Panel --- */}
+                <div className={`bg-white border-t border-gray-200 transition-all duration-300 ease-in-out ${quickActionsOpen ? 'h-auto' : 'h-10 overflow-hidden'}`}>
+                    <div 
+                        className="bg-gray-50 p-2 flex justify-center cursor-pointer hover:bg-gray-100"
+                        onClick={() => setQuickActionsOpen(!quickActionsOpen)}
+                    >
+                        {quickActionsOpen ? <ChevronDown size={16} className="text-gray-500"/> : <ChevronUp size={16} className="text-gray-500"/>}
+                    </div>
+                    
+                    {/* Expanded max-height to show more buttons */}
+                    <div className="p-2 grid grid-cols-3 gap-2 overflow-y-auto max-h-60 bg-gray-50">
+                        {QUICK_ACTIONS.map((action) => (
+                        <button
+                            key={action.label}
+                            onClick={() => addLog(action.label, action.type)}
+                            disabled={!!endTime}
+                            className={`
+                            py-2 px-1 rounded text-xs font-bold shadow-sm border transition-colors active:scale-95
+                            ${action.type === 'treatment' ? 'bg-red-100 border-red-200 text-red-800 hover:bg-red-200' : 
+                                action.type === 'milestone' ? 'bg-blue-100 border-blue-200 text-blue-800 hover:bg-blue-200' : 
+                                'bg-green-100 border-green-200 text-green-800 hover:bg-green-200'}
+                            ${!!endTime ? 'opacity-50' : ''} 
+                            `}
+                        >
+                            {action.label}
+                        </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* --- Input Area --- */}
+                <div className="bg-white p-3 border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20">
+                    <form onSubmit={handleManualSubmit} className="flex items-center gap-2 mb-2">
+                    <input
+                        type="text"
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        placeholder={endTime ? "事後記録..." : "メモを入力..."}
+                        className="flex-1 bg-gray-100 border-0 rounded-full px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                    <button 
+                        type="button"
+                        onClick={toggleListening}
+                        className={`p-3 rounded-full transition-colors shadow-md ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-200 text-gray-600'}`}
+                    >
+                        {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+                    </button>
+                    <button 
+                        type="submit"
+                        disabled={!inputText.trim()}
+                        className="p-3 bg-blue-600 text-white rounded-full shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                        <Send size={20} />
+                    </button>
+                    </form>
+
+                    <div className="flex justify-between items-center px-1">
+                    <button 
+                        type="button" 
+                        onClick={() => setShowExport(true)}
+                        className="text-xs text-gray-500 flex items-center gap-1 hover:text-blue-600"
+                    >
+                        <FileText size={14} />
+                        ログ書き出し
+                    </button>
+                    </div>
+                </div>
+
+                {/* --- Export Modal --- */}
+                {showExport && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
+                        <h2 className="font-bold text-gray-700 flex items-center gap-2">
+                            <Save size={18} />
+                            活動記録出力
+                        </h2>
+                        <button onClick={() => setShowExport(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                        </div>
+                        <div className="p-4">
+                        <textarea
+                            readOnly
+                            className="w-full h-48 bg-gray-50 border rounded p-2 text-xs font-mono leading-relaxed mb-4"
+                            value={(incidentNumber ? `事案番号: ${incidentNumber}\n---\n` : '') + 
+                                `\n--- 活動ログ ---\n` + 
+                                logs.map(log => `[${formatTime(log.timestamp)}] (+${formatElapsed(log.elapsedSeconds)}) ${log.type === 'treatment' ? '【処置】' : ''} ${log.content}`).join('\n')}
+                        />
+                        <div className="flex gap-2">
+                            <button 
+                            onClick={copyToClipboard}
+                            className="flex-1 bg-blue-600 text-white py-2 rounded flex justify-center items-center gap-2 hover:bg-blue-700"
+                            >
+                            <Copy size={16} />
+                            コピー
+                            </button>
+                            <button 
+                            onClick={() => setShowExport(false)}
+                            className="flex-1 bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300"
+                            >
+                            閉じる
+                            </button>
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+                )}
+
+                {/* --- Reset Confirmation Modal --- */}
+                {showResetConfirm && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-xs overflow-hidden p-6 animate-in fade-in zoom-in duration-200">
+                        <div className="flex items-center gap-3 mb-4 text-red-600">
+                            <AlertTriangle size={24} />
+                            <h3 className="text-lg font-bold text-gray-900">新規活動の開始</h3>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                        現在の記録をすべて消去して、新しい活動を開始しますか？<br/>
+                        <span className="text-red-500 text-xs font-bold block mt-2">※必要な場合は先に「ログ書き出し」を行ってください。</span>
+                        </p>
+                        <div className="flex gap-3">
+                        <button
+                            onClick={executeReset}
+                            className="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700 font-bold shadow-sm transition-colors"
+                        >
+                            リセット
+                        </button>
+                        <button
+                            onClick={() => setShowResetConfirm(false)}
+                            className="flex-1 bg-gray-100 text-gray-700 py-2 rounded hover:bg-gray-200 font-medium transition-colors"
+                        >
+                            キャンセル
+                        </button>
+                        </div>
+                    </div>
+                    </div>
+                )}
+
+                </div>
+            );
+        }
+
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<TrafficRescueMemo />);
+        root.render(<App />);
     </script>
 </body>
 </html>
