@@ -75,12 +75,15 @@
             { label: '接触', type: 'milestone' },
             { label: '車内収容', type: 'milestone' },
             { label: '病院着', type: 'milestone' },
+            { label: '心電図', type: 'treatment' }, // 赤色 (treatment)
             { label: '酸素投与', type: 'treatment' },
             { label: 'CPR開始', type: 'treatment' },
             { label: '除細動', type: 'treatment' },
             { label: '静脈路確保', type: 'treatment' },
             { label: 'アドレナリン', type: 'treatment' },
             { label: 'バイタル測定', type: 'vitals' },
+            { label: 'ROSC', type: 'vitals' }, // 緑色 (vitals)
+            { label: '指示要請', type: 'vitals' }, // 緑色 (vitals)
         ];
 
         // --- Main Component ---
@@ -412,7 +415,8 @@
                         {quickActionsOpen ? <ChevronDown size={16} className="text-gray-500"/> : <ChevronUp size={16} className="text-gray-500"/>}
                     </div>
                     
-                    <div className="p-2 grid grid-cols-3 gap-2 overflow-y-auto max-h-32 bg-gray-50">
+                    {/* Expanded max-height to show more buttons */}
+                    <div className="p-2 grid grid-cols-3 gap-2 overflow-y-auto max-h-60 bg-gray-50">
                         {QUICK_ACTIONS.map((action) => (
                         <button
                             key={action.label}
