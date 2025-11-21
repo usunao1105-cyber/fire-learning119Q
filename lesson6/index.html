@@ -42,8 +42,6 @@
 
         const Activity = (props) => <Icon {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></Icon>;
         const Clock = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></Icon>;
-        const Mic = (props) => <Icon {...props}><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></Icon>;
-        const MicOff = (props) => <Icon {...props}><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></Icon>;
         const Send = (props) => <Icon {...props}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Icon>;
         const FileText = (props) => <Icon {...props}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></Icon>;
         const Trash2 = (props) => <Icon {...props}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></Icon>;
@@ -91,7 +89,6 @@
             // --- State ---
             const [logs, setLogs] = useState([]);
             const [inputText, setInputText] = useState('');
-            const [isListening, setIsListening] = useState(false);
             const [startTime, setStartTime] = useState(null);
             const [endTime, setEndTime] = useState(null);
             const [elapsed, setElapsed] = useState(0);
@@ -102,7 +99,6 @@
             const [periodCount, setPeriodCount] = useState(1);
             
             // Refs
-            const recognitionRef = useRef(null);
             const logsEndRef = useRef(null);
 
             // --- Timer Logic ---
@@ -122,32 +118,6 @@
             useEffect(() => {
                 logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
             }, [logs]);
-
-            // --- Speech Recognition Setup ---
-            useEffect(() => {
-                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                    recognitionRef.current = new SpeechRecognition();
-                    recognitionRef.current.continuous = false;
-                    recognitionRef.current.interimResults = false;
-                    recognitionRef.current.lang = 'ja-JP';
-
-                    recognitionRef.current.onresult = (event) => {
-                        const transcript = event.results[0][0].transcript;
-                        setInputText((prev) => (prev ? `${prev} ${transcript}` : transcript));
-                        setIsListening(false);
-                    };
-
-                    recognitionRef.current.onerror = (event) => {
-                        console.error('Speech recognition error', event.error);
-                        setIsListening(false);
-                    };
-
-                    recognitionRef.current.onend = () => {
-                        setIsListening(false);
-                    };
-                }
-            }, []);
 
             // --- Actions ---
             const handleStartActivity = () => {
@@ -222,19 +192,6 @@
                 if (!inputText.trim()) return;
                 addLog(inputText, 'note');
                 setInputText('');
-            };
-
-            const toggleListening = () => {
-                if (!recognitionRef.current) {
-                alert('お使いのブラウザは音声入力をサポートしていません。');
-                return;
-                }
-                if (isListening) {
-                recognitionRef.current.stop();
-                } else {
-                recognitionRef.current.start();
-                setIsListening(true);
-                }
             };
 
             const copyToClipboard = () => {
@@ -382,7 +339,7 @@
                     <div className="text-center text-gray-400 mt-10 flex flex-col items-center">
                         <FileText size={48} className="mb-2 opacity-20" />
                         <p>活動ログがここに表示されます</p>
-                        <p className="text-xs mt-2">音声入力または下のボタンで記録</p>
+                        <p className="text-xs mt-2">下のボタンまたは入力で記録</p>
                     </div>
                     )}
                     
@@ -446,13 +403,6 @@
                         placeholder={endTime ? "事後記録..." : "メモを入力..."}
                         className="flex-1 bg-gray-100 border-0 rounded-full px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     />
-                    <button 
-                        type="button"
-                        onClick={toggleListening}
-                        className={`p-3 rounded-full transition-colors shadow-md ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-200 text-gray-600'}`}
-                    >
-                        {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-                    </button>
                     <button 
                         type="submit"
                         disabled={!inputText.trim()}
