@@ -1,936 +1,889 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  ClipboardList, 
-  User, 
-  Flame, 
-  Clock, 
-  MapPin, 
-  Save, 
-  Trash2, 
-  Plus, 
-  ChevronDown, 
-  ChevronUp, 
-  FileText, 
-  ArrowLeft,
-  AlertTriangle,
-  Download,
-  Copy,
-  Printer,
-  X,
-  CheckCircle,
-  AlertCircle
-} from 'lucide-react';
-
-// ---------------- UI Components ----------------
-
-// カスタムモーダルコンポーネント
-const CustomModal = ({ isOpen, onClose, title, message, type, onConfirm }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 transform transition-all scale-100">
-        {/* Header */}
-        <div className={`px-6 py-4 flex items-center gap-3 border-b ${type === 'confirm' || type === 'error' ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-100'}`}>
-          {type === 'confirm' || type === 'error' ? (
-            <AlertCircle className="text-red-500" size={24} />
-          ) : (
-            <CheckCircle className="text-emerald-500" size={24} />
-          )}
-          <h3 className={`text-lg font-bold ${type === 'confirm' || type === 'error' ? 'text-red-900' : 'text-slate-800'}`}>
-            {title}
-          </h3>
-          <button onClick={onClose} className="ml-auto text-slate-400 hover:text-slate-600 transition-colors">
-            <X size={20} />
-          </button>
-        </div>
-        
-        {/* Body */}
-        <div className="p-6 text-slate-600 leading-relaxed">
-          {message}
-        </div>
-        
-        {/* Footer */}
-        <div className="px-6 py-4 bg-slate-50 flex justify-end gap-3">
-          {type === 'confirm' ? (
-            <>
-              <button 
-                onClick={onClose}
-                className="px-4 py-2 rounded-lg font-bold text-slate-600 hover:bg-slate-200 transition-colors"
-              >
-                キャンセル
-              </button>
-              <button 
-                onClick={() => { onConfirm(); onClose(); }}
-                className="px-4 py-2 rounded-lg font-bold text-white bg-red-500 hover:bg-red-600 shadow-md hover:shadow-lg transition-all"
-              >
-                削除する
-              </button>
-            </>
-          ) : (
-            <button 
-              onClick={onClose}
-              className="px-6 py-2 rounded-lg font-bold text-white bg-slate-800 hover:bg-slate-900 shadow-md hover:shadow-lg transition-all"
-            >
-              OK
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const SectionHeader = ({ title, icon: Icon, sectionName, activeSection, setActiveSection }) => (
-  <button 
-    type="button"
-    onClick={() => setActiveSection(activeSection === sectionName ? null : sectionName)}
-    className={`w-full flex items-center justify-between p-5 mb-3 rounded-lg transition-all duration-300 border ${
-      activeSection === sectionName 
-        ? 'bg-slate-800 text-amber-50 border-slate-800 shadow-lg transform -translate-y-0.5' 
-        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-sm'
-    }`}
-  >
-    <div className="flex items-center gap-3 font-bold text-lg tracking-wide">
-      <Icon size={20} className={activeSection === sectionName ? "text-amber-400" : "text-slate-400"} />
-      {title}
-    </div>
-    {activeSection === sectionName ? <ChevronUp size={20} className="text-amber-400" /> : <ChevronDown size={20} className="text-slate-400" />}
-  </button>
-);
-
-const InputField = ({ label, value, onChange, placeholder, type = "text", required = false }) => (
-  <div className="mb-6 w-full group">
-    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1 transition-colors group-focus-within:text-amber-700">
-      {label} {required && <span className="text-red-500">*</span>}
-    </label>
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-800 focus:border-transparent outline-none transition-all duration-200 shadow-inner"
-    />
-  </div>
-);
-
-const TextArea = ({ label, value, onChange, placeholder, rows = 3 }) => (
-  <div className="mb-6 group">
-    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1 transition-colors group-focus-within:text-amber-700">
-      {label}
-    </label>
-    <textarea
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-800 focus:border-transparent outline-none transition-all duration-200 shadow-inner"
-    />
-  </div>
-);
-
-// ---------------- Views (Defined OUTSIDE main component) ----------------
-
-const ListView = ({ reports, createNewReport, setCurrentReport, setView, deleteReport }) => (
-  <div className="p-6 max-w-4xl mx-auto">
-    <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-10 pb-6 border-b border-slate-200">
-      <div>
-        <h1 className="text-3xl font-extrabold text-slate-800 flex items-center gap-3 tracking-tight">
-          <div className="p-2 bg-slate-800 rounded-lg shadow-lg">
-            <Flame className="text-amber-400 fill-amber-400" size={24} />
-          </div>
-          <span>DIGITAL<span className="text-slate-400 mx-2">|</span>FIELD NOTE</span>
-        </h1>
-        <p className="text-xs font-bold text-slate-500 mt-2 tracking-widest uppercase ml-1">Fire Investigation Log System</p>
-      </div>
-      <button 
-        onClick={createNewReport}
-        className="mt-4 md:mt-0 bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-lg flex items-center gap-2 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 font-bold border-b-4 border-slate-950 active:border-b-0 active:translate-y-1"
-      >
-        <Plus size={18} className="text-amber-400" /> 新規調査作成
-      </button>
-    </div>
-
-    {reports.length === 0 ? (
-      <div className="text-center py-24 bg-white rounded-2xl border border-slate-200 shadow-sm">
-        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <ClipboardList className="text-slate-300" size={32} />
-        </div>
-        <p className="text-slate-400 font-medium mb-6">記録されたデータはありません</p>
-        <button onClick={createNewReport} className="text-amber-700 font-bold hover:text-amber-800 hover:underline transition-colors">
-          新しい調査を開始する
-        </button>
-      </div>
-    ) : (
-      <div className="grid gap-5">
-        {reports.map(report => (
-          <div key={report.id} className="group bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-xl hover:border-amber-200 transition-all duration-300 relative overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-200 group-hover:bg-amber-400 transition-colors"></div>
-            <div className="flex justify-between items-start pl-3">
-              <div onClick={() => { setCurrentReport(report); setView('edit'); }} className="cursor-pointer flex-1">
-                <h3 className="font-bold text-xl text-slate-800 mb-2 group-hover:text-amber-700 transition-colors">
-                  {report.basicInfo.incidentName || '名称未設定案件'}
-                </h3>
-                <div className="flex gap-4 text-sm text-slate-500 font-medium">
-                  <span className="flex items-center gap-1.5"><Clock size={14} className="text-amber-600"/> {report.basicInfo.date || '---'}</span>
-                  <span className="flex items-center gap-1.5"><MapPin size={14} className="text-amber-600"/> {report.basicInfo.location || '---'}</span>
-                </div>
-              </div>
-              <div className="flex gap-2 relative z-10">
-                <button 
-                  type="button"
-                  onClick={(e) => { 
-                    e.stopPropagation();
-                    setCurrentReport(report); 
-                    setView('preview'); 
-                  }}
-                  className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
-                  title="出力プレビュー"
-                >
-                  <FileText size={20} />
-                </button>
-                <button 
-                  type="button"
-                  onClick={(e) => { 
-                    e.stopPropagation();
-                    deleteReport(report.id);
-                  }}
-                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  title="削除"
-                >
-                  <Trash2 size={20} />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-);
-
-const EditView = ({ 
-  currentReport, 
-  setView, 
-  saveCurrentReport, 
-  deleteReport, 
-  activeSection, 
-  setActiveSection, 
-  updateReport, 
-  addPerson, 
-  updatePerson, 
-  removePerson,
-  addTimelineEvent,
-  updateTimelineEvent,
-  removeTimelineEvent
-}) => {
-  if (!currentReport) return null;
-
-  const sortedTimelineForEdit = [...currentReport.timeline].sort((a, b) => {
-    if (!a.time && !b.time) return 0;
-    if (!a.time) return 1;
-    if (!b.time) return -1;
-    return a.time.localeCompare(b.time);
-  });
-
-  return (
-    <div className="pb-24 bg-zinc-50 min-h-screen">
-      {/* Luxury Sticky Header */}
-      <div className="bg-slate-900 border-b border-slate-800 sticky top-0 z-20 px-4 py-4 flex justify-between items-center shadow-2xl">
-        <div className="flex items-center">
-          <button onClick={() => setView('list')} className="text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800 transition-colors" title="一覧に戻る">
-            <ArrowLeft size={22} />
-          </button>
-          <button 
-            onClick={() => deleteReport(currentReport.id)}
-            className="ml-2 text-slate-500 hover:text-red-500 p-2 rounded-full hover:bg-slate-800 transition-colors"
-            title="この記録を削除"
-          >
-            <Trash2 size={20} />
-          </button>
-        </div>
-
-        <div className="text-center">
-          <h2 className="font-bold text-white text-sm md:text-base tracking-wider">EDIT MODE</h2>
-          <p className="text-xs text-amber-500 font-mono">{currentReport.basicInfo.date || 'DATE NOT SET'}</p>
-        </div>
-        <button onClick={saveCurrentReport} className="text-slate-900 bg-amber-400 hover:bg-amber-300 px-5 py-1.5 rounded shadow-lg font-bold text-sm transition-all hover:shadow-amber-400/20">
-          SAVE
-        </button>
-      </div>
-
-      <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
-        
-        <div className="bg-white border-l-4 border-amber-500 p-4 shadow-sm rounded-r-lg flex items-start gap-3">
-          <AlertTriangle size={20} className="text-amber-500 shrink-0 mt-0.5" />
-          <div className="text-sm text-slate-600 leading-relaxed">
-            <span className="font-bold text-slate-800 block mb-1">法的リスク管理</span>
-            記述は客観的事実に留め、推測を含む場合はその旨を明記してください。
-          </div>
-        </div>
-
-        {/* 1. Basic Info */}
-        <div className="shadow-sm rounded-lg overflow-hidden">
-          <SectionHeader 
-            title="基本情報" 
-            icon={ClipboardList} 
-            sectionName="basic" 
-            activeSection={activeSection}
-            setActiveSection={setActiveSection}
-          />
-          {activeSection === 'basic' && (
-            <div className="bg-white p-6 rounded-b-lg border-x border-b border-slate-200 animate-fadeIn">
-              <InputField 
-                label="案件名" 
-                value={currentReport.basicInfo.incidentName} 
-                onChange={(val) => updateReport('basicInfo', {...currentReport.basicInfo, incidentName: val})}
-                placeholder="例：〇〇町2丁目 一般住宅火災"
-              />
-              <div className="grid grid-cols-2 gap-6">
-                <InputField 
-                  label="覚知日時" 
-                  type="date"
-                  value={currentReport.basicInfo.date} 
-                  onChange={(val) => updateReport('basicInfo', {...currentReport.basicInfo, date: val})}
-                />
-                <InputField 
-                  label="時刻" 
-                  type="time"
-                  value={currentReport.basicInfo.time} 
-                  onChange={(val) => updateReport('basicInfo', {...currentReport.basicInfo, time: val})}
-                />
-              </div>
-              <InputField 
-                label="発生場所" 
-                value={currentReport.basicInfo.location} 
-                onChange={(val) => updateReport('basicInfo', {...currentReport.basicInfo, location: val})}
-                placeholder="住所または目標物"
-              />
-              <div className="grid grid-cols-2 gap-6">
-                <InputField 
-                  label="天候" 
-                  value={currentReport.basicInfo.weather} 
-                  onChange={(val) => updateReport('basicInfo', {...currentReport.basicInfo, weather: val})}
-                  placeholder="晴れ、強風など"
-                />
-                <InputField 
-                  label="気温・湿度" 
-                  value={currentReport.basicInfo.temperature} 
-                  onChange={(val) => updateReport('basicInfo', {...currentReport.basicInfo, temperature: val})}
-                  placeholder="24℃ / 45%"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 2. People Involved */}
-        <div className="shadow-sm rounded-lg overflow-hidden">
-          <SectionHeader 
-            title="関係者・目撃者" 
-            icon={User} 
-            sectionName="people" 
-            activeSection={activeSection}
-            setActiveSection={setActiveSection}
-          />
-          {activeSection === 'people' && (
-            <div className="bg-white p-6 rounded-b-lg border-x border-b border-slate-200">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-100 pb-2">
-                PERSONS INVOLVED
-              </p>
-              {currentReport.people.map((person, index) => (
-                <div key={person.id} className="mb-8 p-6 bg-slate-50 rounded-xl border border-slate-200 relative shadow-inner">
-                  <div className="absolute -top-3 -left-3 w-8 h-8 bg-slate-800 text-white rounded-full flex items-center justify-center font-bold shadow-md text-sm">
-                    {index + 1}
-                  </div>
-                  <button 
-                    type="button" 
-                    onClick={() => removePerson(person.id)}
-                    className="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors p-1"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                  
-                  <div className="mb-5">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">区分</label>
-                    <div className="relative">
-                      <select 
-                        value={person.type}
-                        onChange={(e) => updatePerson(person.id, 'type', e.target.value)}
-                        className="w-full p-3 bg-white border border-slate-300 rounded-lg appearance-none text-slate-800 font-bold focus:ring-2 focus:ring-slate-800 focus:border-transparent outline-none"
-                      >
-                        <option>第一発見者</option>
-                        <option>初期消火者</option>
-                        <option>人名救助者</option>
-                        <option>通報者</option>
-                        <option>所有者・管理者</option>
-                        <option>その他目撃者</option>
-                      </select>
-                      <ChevronDown className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" size={16} />
-                    </div>
-                  </div>
-                  
-                  <InputField 
-                    label="氏名" 
-                    value={person.name} 
-                    onChange={(val) => updatePerson(person.id, 'name', val)}
-                  />
-
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                    <div className="w-full group">
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1 group-focus-within:text-amber-700">性別</label>
-                      <div className="relative">
-                        <select
-                          value={person.gender || ''}
-                          onChange={(e) => updatePerson(person.id, 'gender', e.target.value)}
-                          className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:ring-2 focus:ring-slate-800 outline-none transition-all appearance-none shadow-inner"
-                        >
-                          <option value="">未選択</option>
-                          <option value="男性">男性</option>
-                          <option value="女性">女性</option>
-                          <option value="その他">その他</option>
-                          <option value="不明">不明</option>
-                        </select>
-                        <ChevronDown className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" size={14} />
-                      </div>
-                    </div>
-                    <InputField 
-                      label="生年月日" 
-                      type="date"
-                      value={person.birthDate || ''} 
-                      onChange={(val) => updatePerson(person.id, 'birthDate', val)}
-                    />
-                    <InputField 
-                      label="年齢" 
-                      type="number"
-                      placeholder="歳"
-                      value={person.age || ''} 
-                      onChange={(val) => updatePerson(person.id, 'age', val)}
-                    />
-                  </div>
-                  
-                  <InputField 
-                    label="連絡先・住所" 
-                    value={person.contact} 
-                    onChange={(val) => updatePerson(person.id, 'contact', val)}
-                  />
-                  <InputField 
-                    label="発見時の居場所" 
-                    value={person.locationAtDiscovery} 
-                    onChange={(val) => updatePerson(person.id, 'locationAtDiscovery', val)}
-                    placeholder="例：建物の南側道路上"
-                  />
-                  <TextArea 
-                    label="取った行動・証言内容" 
-                    value={person.statement}
-                    onChange={(val) => updatePerson(person.id, 'statement', val)}
-                    placeholder="詳細に記述..."
-                  />
-                </div>
-              ))}
-              <button 
-                onClick={addPerson}
-                className="w-full py-4 border-2 border-dashed border-slate-300 text-slate-500 rounded-xl hover:bg-slate-50 hover:border-amber-400 hover:text-amber-600 transition-all duration-300 flex justify-center items-center gap-2 font-bold tracking-wide group"
-              >
-                <div className="bg-slate-200 rounded-full p-1 group-hover:bg-amber-100 transition-colors">
-                  <Plus size={20} /> 
-                </div>
-                関係者を追加
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* 3. Discovery Details */}
-        <div className="shadow-sm rounded-lg overflow-hidden">
-          <SectionHeader 
-            title="発見時の状況" 
-            icon={Flame} 
-            sectionName="discovery" 
-            activeSection={activeSection}
-            setActiveSection={setActiveSection}
-          />
-          {activeSection === 'discovery' && (
-            <div className="bg-white p-6 rounded-b-lg border-x border-b border-slate-200">
-               <InputField 
-                label="出火（発見）箇所" 
-                value={currentReport.discovery.location} 
-                onChange={(val) => updateReport('discovery', {...currentReport.discovery, location: val})}
-                placeholder="例：1階台所付近、北東の角"
-              />
-              <TextArea 
-                label="燃焼の性状・状態" 
-                value={currentReport.discovery.state} 
-                onChange={(val) => updateReport('discovery', {...currentReport.discovery, state: val})}
-                placeholder="立ち昇る炎、くすぶり、爆発的など"
-              />
-              <div className="grid grid-cols-2 gap-6">
-                <InputField 
-                  label="煙の色・量" 
-                  value={currentReport.discovery.smokeColor} 
-                  onChange={(val) => updateReport('discovery', {...currentReport.discovery, smokeColor: val})}
-                  placeholder="黒煙、白煙、少量など"
-                />
-                <InputField 
-                  label="炎の色" 
-                  value={currentReport.discovery.flameColor} 
-                  onChange={(val) => updateReport('discovery', {...currentReport.discovery, flameColor: val})}
-                  placeholder="赤、オレンジ、青白いなど"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <InputField 
-                  label="臭気" 
-                  value={currentReport.discovery.odor} 
-                  onChange={(val) => updateReport('discovery', {...currentReport.discovery, odor: val})}
-                  placeholder="異臭の有無"
-                />
-                <InputField 
-                  label="音" 
-                  value={currentReport.discovery.sound} 
-                  onChange={(val) => updateReport('discovery', {...currentReport.discovery, sound: val})}
-                  placeholder="爆発音など"
-                />
-              </div>
-               <TextArea 
-                label="開口部・施錠の状況" 
-                value={currentReport.discovery.entryStatus} 
-                onChange={(val) => updateReport('discovery', {...currentReport.discovery, entryStatus: val})}
-                placeholder="玄関施錠、窓の開放状況、破壊痕"
-              />
-            </div>
-          )}
-        </div>
-
-        {/* 4. Timeline */}
-        <div className="shadow-sm rounded-lg overflow-hidden">
-          <SectionHeader 
-            title="時系列記録" 
-            icon={Clock} 
-            sectionName="timeline" 
-            activeSection={activeSection}
-            setActiveSection={setActiveSection}
-          />
-          {activeSection === 'timeline' && (
-            <div className="bg-white p-6 rounded-b-lg border-x border-b border-slate-200">
-              <div className="relative border-l-2 border-slate-200 ml-3 space-y-8 pl-8 pb-4">
-                {sortedTimelineForEdit.map((event) => (
-                  <div key={event.id} className="relative group">
-                    <div className="absolute -left-[39px] top-3 w-5 h-5 bg-slate-800 rounded-full border-4 border-white shadow-sm z-10"></div>
-                    <div className="flex flex-col sm:flex-row gap-3 mb-2 items-start sm:items-center">
-                      <div className="relative">
-                        <input
-                          type="time"
-                          value={event.time}
-                          onChange={(e) => updateTimelineEvent(event.id, 'time', e.target.value)}
-                          className="border border-slate-300 rounded px-3 py-1.5 text-sm w-32 font-mono bg-slate-50 focus:ring-2 focus:ring-slate-800 outline-none"
-                        />
-                      </div>
-                      <button 
-                        type="button"
-                        onClick={() => removeTimelineEvent(event.id)}
-                        className="text-slate-300 hover:text-red-500 p-1 transition-colors ml-auto sm:ml-0"
-                        title="削除"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                    <textarea
-                      value={event.description}
-                      onChange={(e) => updateTimelineEvent(event.id, 'description', e.target.value)}
-                      placeholder="イベント内容..."
-                      className="w-full border border-slate-200 rounded-lg p-3 text-sm bg-white focus:ring-2 focus:ring-slate-800 focus:border-transparent outline-none shadow-sm transition-all"
-                      rows={2}
-                    />
-                  </div>
-                ))}
-              </div>
-              <button 
-                onClick={addTimelineEvent}
-                className="mt-6 w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-bold tracking-wide transition-colors"
-              >
-                + 時系列イベントを追加
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* 5. Free Notes */}
-        <div className="shadow-sm rounded-lg overflow-hidden">
-          <SectionHeader 
-            title="その他メモ・特記事項" 
-            icon={FileText} 
-            sectionName="notes" 
-            activeSection={activeSection}
-            setActiveSection={setActiveSection}
-          />
-          {activeSection === 'notes' && (
-            <div className="bg-white p-6 rounded-b-lg border-x border-b border-slate-200">
-              <TextArea 
-                label="自由記述欄"
-                value={currentReport.notes}
-                onChange={(val) => updateReport('notes', val)}
-                rows={8}
-                placeholder="スケッチの参照、その他気になった点など"
-              />
-            </div>
-          )}
-        </div>
-
-      </div>
-    </div>
-  );
-};
-
-const PreviewView = ({ currentReport, setView, showDialog }) => {
-  if (!currentReport) return null;
-
-  const generateTextReport = () => {
-    let text = `【火災調査報告用メモ】\n`;
-    text += `案件名: ${currentReport.basicInfo.incidentName}\n`;
-    text += `日時: ${currentReport.basicInfo.date} ${currentReport.basicInfo.time}\n`;
-    text += `場所: ${currentReport.basicInfo.location}\n`;
-    text += `気象: ${currentReport.basicInfo.weather} / ${currentReport.basicInfo.temperature}\n\n`;
-
-    text += `■ 関係者・目撃者\n`;
-    currentReport.people.forEach((p, i) => {
-      const ageStr = p.age ? ` (${p.age}歳)` : '';
-      const genderStr = p.gender ? ` / ${p.gender}` : '';
-      const birthStr = p.birthDate ? ` 生年月日:${p.birthDate}` : '';
-      text += `${i+1}. [${p.type}] ${p.name}${ageStr}${genderStr}${birthStr}\n`;
-      text += `   連絡先: ${p.contact}\n`;
-      text += `   発見位置: ${p.locationAtDiscovery}\n`;
-      text += `   証言: ${p.statement}\n`;
-    });
-    text += `\n`;
-
-    text += `■ 発見時の状況\n`;
-    text += `箇所: ${currentReport.discovery.location}\n`;
-    text += `性状: ${currentReport.discovery.state}\n`;
-    text += `煙/炎: ${currentReport.discovery.smokeColor} / ${currentReport.discovery.flameColor}\n`;
-    text += `臭気/音: ${currentReport.discovery.odor} / ${currentReport.discovery.sound}\n`;
-    text += `施錠: ${currentReport.discovery.entryStatus}\n\n`;
-
-    text += `■ 時系列\n`;
-    const sortedTimeline = [...currentReport.timeline].sort((a, b) => {
-      if (!a.time && !b.time) return 0;
-      if (!a.time) return 1;
-      if (!b.time) return -1;
-      return a.time.localeCompare(b.time);
-    });
-    sortedTimeline.forEach(t => {
-      const timeStr = t.time ? t.time : '(時刻未定)';
-      text += `${timeStr} : ${t.description}\n`;
-    });
-    text += `\n`;
-
-    text += `■ その他\n${currentReport.notes}\n`;
-    return text;
-  };
-
-  const copyToClipboard = () => {
-    const text = generateTextReport();
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    document.body.appendChild(textArea);
-    textArea.select();
-    try {
-      document.execCommand('copy');
-      showDialog('成功', 'クリップボードにコピーしました');
-    } catch (err) {
-      showDialog('エラー', 'コピーに失敗しました。手動でコピーしてください。', 'error');
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>火災調査デジタル野帳 | Fire Investigation Log</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Import Map (React, ReactDOM, Lucide Icons from CDN) -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.294.0"
+      }
     }
-    document.body.removeChild(textArea);
-  };
+    </script>
 
-  const downloadTextFile = () => {
-    const text = generateTextReport();
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const dateStr = currentReport.basicInfo.date || 'nodate';
-    const nameStr = currentReport.basicInfo.incidentName || 'report';
-    a.download = `${dateStr}_${nameStr}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+    <!-- Babel for JSX compilation in browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  return (
-    <div className="bg-zinc-100 min-h-screen p-4 flex flex-col items-center print:bg-white print:p-0">
-      <style>{`
+    <style>
+        /* Custom Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        /* Print Styles */
         @media print {
-          .no-print { display: none !important; }
-          body { background: white; }
-          .print-content { 
-            box-shadow: none !important; 
-            border: none !important; 
-            width: 100% !important; 
-            max-width: none !important;
-            padding: 0 !important;
-          }
+            .no-print { display: none !important; }
+            body { background: white; }
+            .print-content { 
+                box-shadow: none !important; 
+                border: none !important; 
+                width: 100% !important; 
+                max-width: none !important;
+                padding: 0 !important;
+            }
         }
-      `}</style>
+    </style>
+</head>
+<body class="bg-zinc-100 font-sans text-slate-900 selection:bg-amber-200 selection:text-slate-900">
+    <div id="root"></div>
 
-       <div className="no-print bg-white border-b border-slate-200 w-full max-w-3xl mb-6 p-4 rounded-xl shadow-md flex justify-between items-center">
-        <button onClick={() => setView('list')} className="text-slate-500 hover:text-slate-800 hover:bg-slate-100 p-2 rounded-full transition-colors">
-          <ArrowLeft size={22} />
-        </button>
-        <h2 className="font-bold text-slate-800 tracking-wide">OUTPUT PREVIEW</h2>
-        <button onClick={() => { setView('edit'); }} className="text-slate-600 font-bold hover:bg-slate-100 px-4 py-2 rounded-lg transition-colors">
-          編集に戻る
-        </button>
-      </div>
+    <!-- Application Logic -->
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+            ClipboardList, User, Flame, Clock, MapPin, Save, Trash2, Plus, 
+            ChevronDown, ChevronUp, FileText, ArrowLeft, AlertTriangle, 
+            Download, Copy, Printer, X, CheckCircle, AlertCircle 
+        } from 'lucide-react';
 
-      <div className="print-content bg-white w-full max-w-3xl p-8 rounded-xl shadow-2xl mb-6 text-sm md:text-base font-mono whitespace-pre-wrap leading-relaxed border border-slate-100">
-        {generateTextReport()}
-      </div>
+        // ---------------- UI Components ----------------
 
-      <div className="no-print flex flex-col md:flex-row gap-4 w-full max-w-3xl mb-10">
+        // カスタムモーダルコンポーネント
+        const CustomModal = ({ isOpen, onClose, title, message, type, onConfirm }) => {
+            if (!isOpen) return null;
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+                <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 transform transition-all scale-100">
+                    {/* Header */}
+                    <div className={`px-6 py-4 flex items-center gap-3 border-b ${type === 'confirm' || type === 'error' ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-100'}`}>
+                    {type === 'confirm' || type === 'error' ? (
+                        <AlertCircle className="text-red-500" size={24} />
+                    ) : (
+                        <CheckCircle className="text-emerald-500" size={24} />
+                    )}
+                    <h3 className={`text-lg font-bold ${type === 'confirm' || type === 'error' ? 'text-red-900' : 'text-slate-800'}`}>
+                        {title}
+                    </h3>
+                    <button onClick={onClose} className="ml-auto text-slate-400 hover:text-slate-600 transition-colors">
+                        <X size={20} />
+                    </button>
+                    </div>
+                    
+                    {/* Body */}
+                    <div className="p-6 text-slate-600 leading-relaxed">
+                    {message}
+                    </div>
+                    
+                    {/* Footer */}
+                    <div className="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+                    {type === 'confirm' ? (
+                        <>
+                        <button 
+                            onClick={onClose}
+                            className="px-4 py-2 rounded-lg font-bold text-slate-600 hover:bg-slate-200 transition-colors"
+                        >
+                            キャンセル
+                        </button>
+                        <button 
+                            onClick={() => { onConfirm(); onClose(); }}
+                            className="px-4 py-2 rounded-lg font-bold text-white bg-red-500 hover:bg-red-600 shadow-md hover:shadow-lg transition-all"
+                        >
+                            削除する
+                        </button>
+                        </>
+                    ) : (
+                        <button 
+                        onClick={onClose}
+                        className="px-6 py-2 rounded-lg font-bold text-white bg-slate-800 hover:bg-slate-900 shadow-md hover:shadow-lg transition-all"
+                        >
+                        OK
+                        </button>
+                    )}
+                    </div>
+                </div>
+                </div>
+            );
+        };
+
+        const SectionHeader = ({ title, icon: Icon, sectionName, activeSection, setActiveSection }) => (
         <button 
-          onClick={copyToClipboard}
-          className="flex-1 bg-white border border-slate-300 text-slate-700 py-4 rounded-lg shadow-sm hover:bg-slate-50 flex justify-center items-center gap-2 font-bold transition-all"
+            type="button"
+            onClick={() => setActiveSection(activeSection === sectionName ? null : sectionName)}
+            className={`w-full flex items-center justify-between p-5 mb-3 rounded-lg transition-all duration-300 border ${
+            activeSection === sectionName 
+                ? 'bg-slate-800 text-amber-50 border-slate-800 shadow-lg transform -translate-y-0.5' 
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-sm'
+            }`}
         >
-          <Copy size={20} /> コピー
+            <div className="flex items-center gap-3 font-bold text-lg tracking-wide">
+            <Icon size={20} className={activeSection === sectionName ? "text-amber-400" : "text-slate-400"} />
+            {title}
+            </div>
+            {activeSection === sectionName ? <ChevronUp size={20} className="text-amber-400" /> : <ChevronDown size={20} className="text-slate-400" />}
         </button>
-        <button 
-          onClick={downloadTextFile}
-          className="flex-1 bg-slate-800 text-white py-4 rounded-lg shadow-lg hover:bg-slate-900 flex justify-center items-center gap-2 font-bold transition-all"
-        >
-          <Download size={20} className="text-amber-400" /> テキスト保存
-        </button>
-        <button 
-          onClick={handlePrint}
-          className="flex-1 bg-amber-500 text-white py-4 rounded-lg shadow-lg hover:bg-amber-600 flex justify-center items-center gap-2 font-bold transition-all"
-        >
-          <Printer size={20} /> 印刷 / PDF
-        </button>
-      </div>
-    </div>
-  );
-};
+        );
 
-// ---------------- Main Component ----------------
+        const InputField = ({ label, value, onChange, placeholder, type = "text", required = false }) => (
+        <div className="mb-6 w-full group">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1 transition-colors group-focus-within:text-amber-700">
+            {label} {required && <span className="text-red-500">*</span>}
+            </label>
+            <input
+            type={type}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-800 focus:border-transparent outline-none transition-all duration-200 shadow-inner"
+            />
+        </div>
+        );
 
-const FireInvestigationApp = () => {
-  const [view, setView] = useState('list'); // 'list', 'edit', 'preview'
-  const [reports, setReports] = useState([]);
-  const [currentReport, setCurrentReport] = useState(null);
-  const [activeSection, setActiveSection] = useState('basic');
-  
-  // Modal state
-  const [modal, setModal] = useState({
-    isOpen: false,
-    title: '',
-    message: '',
-    type: 'info', // info, confirm, error
-    onConfirm: null
-  });
+        const TextArea = ({ label, value, onChange, placeholder, rows = 3 }) => (
+        <div className="mb-6 group">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1 transition-colors group-focus-within:text-amber-700">
+            {label}
+            </label>
+            <textarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            rows={rows}
+            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-800 focus:border-transparent outline-none transition-all duration-200 shadow-inner"
+            />
+        </div>
+        );
 
-  useEffect(() => {
-    const savedReports = localStorage.getItem('fireInvestigationReports');
-    if (savedReports) {
-      setReports(JSON.parse(savedReports));
-    }
-  }, []);
+        // ---------------- Views ----------------
 
-  useEffect(() => {
-    localStorage.setItem('fireInvestigationReports', JSON.stringify(reports));
-  }, [reports]);
+        const ListView = ({ reports, createNewReport, setCurrentReport, setView, deleteReport }) => (
+        <div className="p-6 max-w-4xl mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-10 pb-6 border-b border-slate-200">
+            <div>
+                <h1 className="text-3xl font-extrabold text-slate-800 flex items-center gap-3 tracking-tight">
+                <div className="p-2 bg-slate-800 rounded-lg shadow-lg">
+                    <Flame className="text-amber-400 fill-amber-400" size={24} />
+                </div>
+                <span>DIGITAL<span className="text-slate-400 mx-2">|</span>FIELD NOTE</span>
+                </h1>
+                <p className="text-xs font-bold text-slate-500 mt-2 tracking-widest uppercase ml-1">Fire Investigation Log System</p>
+            </div>
+            <button 
+                onClick={createNewReport}
+                className="mt-4 md:mt-0 bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-lg flex items-center gap-2 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 font-bold border-b-4 border-slate-950 active:border-b-0 active:translate-y-1"
+            >
+                <Plus size={18} className="text-amber-400" /> 新規調査作成
+            </button>
+            </div>
 
-  // Modal handlers
-  const openDialog = (title, message, type = 'info') => {
-    setModal({ isOpen: true, title, message, type, onConfirm: null });
-  };
+            {reports.length === 0 ? (
+            <div className="text-center py-24 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ClipboardList className="text-slate-300" size={32} />
+                </div>
+                <p className="text-slate-400 font-medium mb-6">記録されたデータはありません</p>
+                <button onClick={createNewReport} className="text-amber-700 font-bold hover:text-amber-800 hover:underline transition-colors">
+                新しい調査を開始する
+                </button>
+            </div>
+            ) : (
+            <div className="grid gap-5">
+                {reports.map(report => (
+                <div key={report.id} className="group bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-xl hover:border-amber-200 transition-all duration-300 relative overflow-hidden">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-200 group-hover:bg-amber-400 transition-colors"></div>
+                    <div className="flex justify-between items-start pl-3">
+                    <div onClick={() => { setCurrentReport(report); setView('edit'); }} className="cursor-pointer flex-1">
+                        <h3 className="font-bold text-xl text-slate-800 mb-2 group-hover:text-amber-700 transition-colors">
+                        {report.basicInfo.incidentName || '名称未設定案件'}
+                        </h3>
+                        <div className="flex gap-4 text-sm text-slate-500 font-medium">
+                        <span className="flex items-center gap-1.5"><Clock size={14} className="text-amber-600"/> {report.basicInfo.date || '---'}</span>
+                        <span className="flex items-center gap-1.5"><MapPin size={14} className="text-amber-600"/> {report.basicInfo.location || '---'}</span>
+                        </div>
+                    </div>
+                    <div className="flex gap-2 relative z-10">
+                        <button 
+                        type="button"
+                        onClick={(e) => { 
+                            e.stopPropagation();
+                            setCurrentReport(report); 
+                            setView('preview'); 
+                        }}
+                        className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                        title="出力プレビュー"
+                        >
+                        <FileText size={20} />
+                        </button>
+                        <button 
+                        type="button"
+                        onClick={(e) => { 
+                            e.stopPropagation();
+                            deleteReport(report.id);
+                        }}
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="削除"
+                        >
+                        <Trash2 size={20} />
+                        </button>
+                    </div>
+                    </div>
+                </div>
+                ))}
+            </div>
+            )}
+        </div>
+        );
 
-  const openConfirm = (title, message, onConfirm) => {
-    setModal({ isOpen: true, title, message, type: 'confirm', onConfirm });
-  };
+        const EditView = ({ 
+        currentReport, 
+        setView, 
+        saveCurrentReport, 
+        deleteReport, 
+        activeSection, 
+        setActiveSection, 
+        updateReport, 
+        addPerson, 
+        updatePerson, 
+        removePerson, 
+        addTimelineEvent, 
+        updateTimelineEvent, 
+        removeTimelineEvent 
+        }) => {
+        if (!currentReport) return null;
 
-  const closeModal = () => {
-    setModal(prev => ({ ...prev, isOpen: false }));
-  };
+        const sortedTimelineForEdit = [...currentReport.timeline].sort((a, b) => {
+            if (!a.time && !b.time) return 0;
+            if (!a.time) return 1;
+            if (!b.time) return -1;
+            return a.time.localeCompare(b.time);
+        });
 
-  const createNewReport = () => {
-    const newReport = {
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      basicInfo: {
-        incidentName: '',
-        date: '',
-        time: '',
-        location: '',
-        weather: '',
-        temperature: ''
-      },
-      people: [],
-      discovery: {
-        location: '',
-        state: '',
-        smokeColor: '',
-        flameColor: '',
-        odor: '',
-        sound: '',
-        entryStatus: ''
-      },
-      timeline: [],
-      notes: ''
-    };
-    setCurrentReport(newReport);
-    setView('edit');
-    setActiveSection('basic');
-  };
+        return (
+            <div className="pb-24 bg-zinc-50 min-h-screen">
+            {/* Luxury Sticky Header */}
+            <div className="bg-slate-900 border-b border-slate-800 sticky top-0 z-20 px-4 py-4 flex justify-between items-center shadow-2xl">
+                <div className="flex items-center">
+                <button onClick={() => setView('list')} className="text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800 transition-colors" title="一覧に戻る">
+                    <ArrowLeft size={22} />
+                </button>
+                <button 
+                    onClick={() => deleteReport(currentReport.id)}
+                    className="ml-2 text-slate-500 hover:text-red-500 p-2 rounded-full hover:bg-slate-800 transition-colors"
+                    title="この記録を削除"
+                >
+                    <Trash2 size={20} />
+                </button>
+                </div>
 
-  const updateReport = (section, data) => {
-    setCurrentReport(prev => ({
-      ...prev,
-      [section]: data
-    }));
-  };
+                <div className="text-center">
+                <h2 className="font-bold text-white text-sm md:text-base tracking-wider">EDIT MODE</h2>
+                <p className="text-xs text-amber-500 font-mono">{currentReport.basicInfo.date || 'DATE NOT SET'}</p>
+                </div>
+                <button onClick={saveCurrentReport} className="text-slate-900 bg-amber-400 hover:bg-amber-300 px-5 py-1.5 rounded shadow-lg font-bold text-sm transition-all hover:shadow-amber-400/20">
+                SAVE
+                </button>
+            </div>
 
-  const saveCurrentReport = () => {
-    setReports(prev => {
-      const existingIndex = prev.findIndex(r => r.id === currentReport.id);
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = currentReport;
-        return updated;
-      } else {
-        return [currentReport, ...prev];
-      }
-    });
-    openDialog('保存完了', '調査記録を保存しました。');
-  };
+            <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
+                
+                <div className="bg-white border-l-4 border-amber-500 p-4 shadow-sm rounded-r-lg flex items-start gap-3">
+                <AlertTriangle size={20} className="text-amber-500 shrink-0 mt-0.5" />
+                <div className="text-sm text-slate-600 leading-relaxed">
+                    <span className="font-bold text-slate-800 block mb-1">法的リスク管理</span>
+                    記述は客観的事実に留め、推測を含む場合はその旨を明記してください。
+                </div>
+                </div>
 
-  const deleteReport = (id) => {
-    openConfirm(
-      '削除の確認',
-      'この調査記録を削除してもよろしいですか？この操作は取り消せません。',
-      () => {
-        setReports(prev => prev.filter(r => r.id !== id));
-        if (currentReport && currentReport.id === id) {
-          setCurrentReport(null);
-        }
-        setView('list');
-      }
-    );
-  };
+                {/* 1. Basic Info */}
+                <div className="shadow-sm rounded-lg overflow-hidden">
+                <SectionHeader 
+                    title="基本情報" 
+                    icon={ClipboardList} 
+                    sectionName="basic" 
+                    activeSection={activeSection}
+                    setActiveSection={setActiveSection}
+                />
+                {activeSection === 'basic' && (
+                    <div className="bg-white p-6 rounded-b-lg border-x border-b border-slate-200 animate-fadeIn">
+                    <InputField 
+                        label="案件名" 
+                        value={currentReport.basicInfo.incidentName} 
+                        onChange={(val) => updateReport('basicInfo', {...currentReport.basicInfo, incidentName: val})}
+                        placeholder="例：〇〇町2丁目 一般住宅火災"
+                    />
+                    <div className="grid grid-cols-2 gap-6">
+                        <InputField 
+                        label="覚知日時" 
+                        type="date"
+                        value={currentReport.basicInfo.date} 
+                        onChange={(val) => updateReport('basicInfo', {...currentReport.basicInfo, date: val})}
+                        />
+                        <InputField 
+                        label="時刻" 
+                        type="time"
+                        value={currentReport.basicInfo.time} 
+                        onChange={(val) => updateReport('basicInfo', {...currentReport.basicInfo, time: val})}
+                        />
+                    </div>
+                    <InputField 
+                        label="発生場所" 
+                        value={currentReport.basicInfo.location} 
+                        onChange={(val) => updateReport('basicInfo', {...currentReport.basicInfo, location: val})}
+                        placeholder="住所または目標物"
+                    />
+                    <div className="grid grid-cols-2 gap-6">
+                        <InputField 
+                        label="天候" 
+                        value={currentReport.basicInfo.weather} 
+                        onChange={(val) => updateReport('basicInfo', {...currentReport.basicInfo, weather: val})}
+                        placeholder="晴れ、強風など"
+                        />
+                        <InputField 
+                        label="気温・湿度" 
+                        value={currentReport.basicInfo.temperature} 
+                        onChange={(val) => updateReport('basicInfo', {...currentReport.basicInfo, temperature: val})}
+                        placeholder="24℃ / 45%"
+                        />
+                    </div>
+                    </div>
+                )}
+                </div>
 
-  const addPerson = () => {
-    const newPerson = {
-      id: Date.now(),
-      type: '第一発見者',
-      name: '',
-      birthDate: '',
-      age: '',
-      gender: '',
-      contact: '',
-      locationAtDiscovery: '',
-      action: '',
-      statement: ''
-    };
-    setCurrentReport(prev => ({
-      ...prev,
-      people: [...prev.people, newPerson]
-    }));
-  };
+                {/* 2. People Involved */}
+                <div className="shadow-sm rounded-lg overflow-hidden">
+                <SectionHeader 
+                    title="関係者・目撃者" 
+                    icon={User} 
+                    sectionName="people" 
+                    activeSection={activeSection}
+                    setActiveSection={setActiveSection}
+                />
+                {activeSection === 'people' && (
+                    <div className="bg-white p-6 rounded-b-lg border-x border-b border-slate-200">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-100 pb-2">
+                        PERSONS INVOLVED
+                    </p>
+                    {currentReport.people.map((person, index) => (
+                        <div key={person.id} className="mb-8 p-6 bg-slate-50 rounded-xl border border-slate-200 relative shadow-inner">
+                        <div className="absolute -top-3 -left-3 w-8 h-8 bg-slate-800 text-white rounded-full flex items-center justify-center font-bold shadow-md text-sm">
+                            {index + 1}
+                        </div>
+                        <button 
+                            type="button" 
+                            onClick={() => removePerson(person.id)}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors p-1"
+                        >
+                            <Trash2 size={18} />
+                        </button>
+                        
+                        <div className="mb-5">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">区分</label>
+                            <div className="relative">
+                            <select 
+                                value={person.type}
+                                onChange={(e) => updatePerson(person.id, 'type', e.target.value)}
+                                className="w-full p-3 bg-white border border-slate-300 rounded-lg appearance-none text-slate-800 font-bold focus:ring-2 focus:ring-slate-800 focus:border-transparent outline-none"
+                            >
+                                <option>第一発見者</option>
+                                <option>初期消火者</option>
+                                <option>人名救助者</option>
+                                <option>通報者</option>
+                                <option>所有者・管理者</option>
+                                <option>その他目撃者</option>
+                            </select>
+                            <ChevronDown className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" size={16} />
+                            </div>
+                        </div>
+                        
+                        <InputField 
+                            label="氏名" 
+                            value={person.name} 
+                            onChange={(val) => updatePerson(person.id, 'name', val)}
+                        />
 
-  const updatePerson = (id, field, value) => {
-    setCurrentReport(prev => ({
-      ...prev,
-      people: prev.people.map(p => 
-        p.id === id ? { ...p, [field]: value } : p
-      )
-    }));
-  };
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                            <div className="w-full group">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1 group-focus-within:text-amber-700">性別</label>
+                            <div className="relative">
+                                <select
+                                value={person.gender || ''}
+                                onChange={(e) => updatePerson(person.id, 'gender', e.target.value)}
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:ring-2 focus:ring-slate-800 outline-none transition-all appearance-none shadow-inner"
+                                >
+                                <option value="">未選択</option>
+                                <option value="男性">男性</option>
+                                <option value="女性">女性</option>
+                                <option value="その他">その他</option>
+                                <option value="不明">不明</option>
+                                </select>
+                                <ChevronDown className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" size={14} />
+                            </div>
+                            </div>
+                            <InputField 
+                            label="生年月日" 
+                            type="date"
+                            value={person.birthDate || ''} 
+                            onChange={(val) => updatePerson(person.id, 'birthDate', val)}
+                            />
+                            <InputField 
+                            label="年齢" 
+                            type="number"
+                            placeholder="歳"
+                            value={person.age || ''} 
+                            onChange={(val) => updatePerson(person.id, 'age', val)}
+                            />
+                        </div>
+                        
+                        <InputField 
+                            label="連絡先・住所" 
+                            value={person.contact} 
+                            onChange={(val) => updatePerson(person.id, 'contact', val)}
+                        />
+                        <InputField 
+                            label="発見時の居場所" 
+                            value={person.locationAtDiscovery} 
+                            onChange={(val) => updatePerson(person.id, 'locationAtDiscovery', val)}
+                            placeholder="例：建物の南側道路上"
+                        />
+                        <TextArea 
+                            label="取った行動・証言内容" 
+                            value={person.statement}
+                            onChange={(val) => updatePerson(person.id, 'statement', val)}
+                            placeholder="詳細に記述..."
+                        />
+                        </div>
+                    ))}
+                    <button 
+                        onClick={addPerson}
+                        className="w-full py-4 border-2 border-dashed border-slate-300 text-slate-500 rounded-xl hover:bg-slate-50 hover:border-amber-400 hover:text-amber-600 transition-all duration-300 flex justify-center items-center gap-2 font-bold tracking-wide group"
+                    >
+                        <div className="bg-slate-200 rounded-full p-1 group-hover:bg-amber-100 transition-colors">
+                        <Plus size={20} /> 
+                        </div>
+                        関係者を追加
+                    </button>
+                    </div>
+                )}
+                </div>
 
-  const removePerson = (id) => {
-    setCurrentReport(prev => ({
-      ...prev,
-      people: prev.people.filter(p => p.id !== id)
-    }));
-  };
+                {/* 3. Discovery Details */}
+                <div className="shadow-sm rounded-lg overflow-hidden">
+                <SectionHeader 
+                    title="発見時の状況" 
+                    icon={Flame} 
+                    sectionName="discovery" 
+                    activeSection={activeSection}
+                    setActiveSection={setActiveSection}
+                />
+                {activeSection === 'discovery' && (
+                    <div className="bg-white p-6 rounded-b-lg border-x border-b border-slate-200">
+                    <InputField 
+                        label="出火（発見）箇所" 
+                        value={currentReport.discovery.location} 
+                        onChange={(val) => updateReport('discovery', {...currentReport.discovery, location: val})}
+                        placeholder="例：1階台所付近、北東の角"
+                    />
+                    <TextArea 
+                        label="燃焼の性状・状態" 
+                        value={currentReport.discovery.state} 
+                        onChange={(val) => updateReport('discovery', {...currentReport.discovery, state: val})}
+                        placeholder="立ち昇る炎、くすぶり、爆発的など"
+                    />
+                    <div className="grid grid-cols-2 gap-6">
+                        <InputField 
+                        label="煙の色・量" 
+                        value={currentReport.discovery.smokeColor} 
+                        onChange={(val) => updateReport('discovery', {...currentReport.discovery, smokeColor: val})}
+                        placeholder="黒煙、白煙、少量など"
+                        />
+                        <InputField 
+                        label="炎の色" 
+                        value={currentReport.discovery.flameColor} 
+                        onChange={(val) => updateReport('discovery', {...currentReport.discovery, flameColor: val})}
+                        placeholder="赤、オレンジ、青白いなど"
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-6">
+                        <InputField 
+                        label="臭気" 
+                        value={currentReport.discovery.odor} 
+                        onChange={(val) => updateReport('discovery', {...currentReport.discovery, odor: val})}
+                        placeholder="異臭の有無"
+                        />
+                        <InputField 
+                        label="音" 
+                        value={currentReport.discovery.sound} 
+                        onChange={(val) => updateReport('discovery', {...currentReport.discovery, sound: val})}
+                        placeholder="爆発音など"
+                        />
+                    </div>
+                    <TextArea 
+                        label="開口部・施錠の状況" 
+                        value={currentReport.discovery.entryStatus} 
+                        onChange={(val) => updateReport('discovery', {...currentReport.discovery, entryStatus: val})}
+                        placeholder="玄関施錠、窓の開放状況、破壊痕"
+                    />
+                    </div>
+                )}
+                </div>
 
-  const addTimelineEvent = () => {
-    const newEvent = {
-      id: Date.now(),
-      time: '',
-      description: ''
-    };
-    setCurrentReport(prev => ({
-      ...prev,
-      timeline: [...prev.timeline, newEvent]
-    }));
-  };
+                {/* 4. Timeline */}
+                <div className="shadow-sm rounded-lg overflow-hidden">
+                <SectionHeader 
+                    title="時系列記録" 
+                    icon={Clock} 
+                    sectionName="timeline" 
+                    activeSection={activeSection}
+                    setActiveSection={setActiveSection}
+                />
+                {activeSection === 'timeline' && (
+                    <div className="bg-white p-6 rounded-b-lg border-x border-b border-slate-200">
+                    <div className="relative border-l-2 border-slate-200 ml-3 space-y-8 pl-8 pb-4">
+                        {sortedTimelineForEdit.map((event) => (
+                        <div key={event.id} className="relative group">
+                            <div className="absolute -left-[39px] top-3 w-5 h-5 bg-slate-800 rounded-full border-4 border-white shadow-sm z-10"></div>
+                            <div className="flex flex-col sm:flex-row gap-3 mb-2 items-start sm:items-center">
+                            <div className="relative">
+                                <input
+                                type="time"
+                                value={event.time}
+                                onChange={(e) => updateTimelineEvent(event.id, 'time', e.target.value)}
+                                className="border border-slate-300 rounded px-3 py-1.5 text-sm w-32 font-mono bg-slate-50 focus:ring-2 focus:ring-slate-800 outline-none"
+                                />
+                            </div>
+                            <button 
+                                type="button"
+                                onClick={() => removeTimelineEvent(event.id)}
+                                className="text-slate-300 hover:text-red-500 p-1 transition-colors ml-auto sm:ml-0"
+                                title="削除"
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                            </div>
+                            <textarea
+                            value={event.description}
+                            onChange={(e) => updateTimelineEvent(event.id, 'description', e.target.value)}
+                            placeholder="イベント内容..."
+                            className="w-full border border-slate-200 rounded-lg p-3 text-sm bg-white focus:ring-2 focus:ring-slate-800 focus:border-transparent outline-none shadow-sm transition-all"
+                            rows={2}
+                            />
+                        </div>
+                        ))}
+                    </div>
+                    <button 
+                        onClick={addTimelineEvent}
+                        className="mt-6 w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-bold tracking-wide transition-colors"
+                    >
+                        + 時系列イベントを追加
+                    </button>
+                    </div>
+                )}
+                </div>
 
-  const updateTimelineEvent = (id, field, value) => {
-    setCurrentReport(prev => ({
-      ...prev,
-      timeline: prev.timeline.map(t => 
-        t.id === id ? { ...t, [field]: value } : t
-      )
-    }));
-  };
+                {/* 5. Free Notes */}
+                <div className="shadow-sm rounded-lg overflow-hidden">
+                <SectionHeader 
+                    title="その他メモ・特記事項" 
+                    icon={FileText} 
+                    sectionName="notes" 
+                    activeSection={activeSection}
+                    setActiveSection={setActiveSection}
+                />
+                {activeSection === 'notes' && (
+                    <div className="bg-white p-6 rounded-b-lg border-x border-b border-slate-200">
+                    <TextArea 
+                        label="自由記述欄"
+                        value={currentReport.notes}
+                        onChange={(val) => updateReport('notes', val)}
+                        rows={8}
+                        placeholder="スケッチの参照、その他気になった点など"
+                    />
+                    </div>
+                )}
+                </div>
 
-  const removeTimelineEvent = (id) => {
-    setCurrentReport(prev => ({
-      ...prev,
-      timeline: prev.timeline.filter(t => t.id !== id)
-    }));
-  };
+            </div>
+            </div>
+        );
+        };
 
-  return (
-    <div className="min-h-screen bg-zinc-100 font-sans text-slate-900 selection:bg-amber-200 selection:text-slate-900">
-      <CustomModal 
-        isOpen={modal.isOpen}
-        onClose={closeModal}
-        title={modal.title}
-        message={modal.message}
-        type={modal.type}
-        onConfirm={modal.onConfirm}
-      />
+        const PreviewView = ({ currentReport, setView, showDialog }) => {
+        if (!currentReport) return null;
 
-      {view === 'list' && (
-        <ListView 
-          reports={reports} 
-          createNewReport={createNewReport} 
-          setCurrentReport={setCurrentReport} 
-          setView={setView} 
-          deleteReport={deleteReport} 
-        />
-      )}
-      {view === 'edit' && (
-        <EditView 
-          currentReport={currentReport}
-          setView={setView}
-          saveCurrentReport={saveCurrentReport}
-          deleteReport={deleteReport}
-          activeSection={activeSection}
-          setActiveSection={setActiveSection}
-          updateReport={updateReport}
-          addPerson={addPerson}
-          updatePerson={updatePerson}
-          removePerson={removePerson}
-          addTimelineEvent={addTimelineEvent}
-          updateTimelineEvent={updateTimelineEvent}
-          removeTimelineEvent={removeTimelineEvent}
-        />
-      )}
-      {view === 'preview' && (
-        <PreviewView 
-          currentReport={currentReport} 
-          setView={setView} 
-          showDialog={openDialog}
-        />
-      )}
-    </div>
-  );
-};
+        const generateTextReport = () => {
+            let text = `【火災調査報告用メモ】\n`;
+            text += `案件名: ${currentReport.basicInfo.incidentName}\n`;
+            text += `日時: ${currentReport.basicInfo.date} ${currentReport.basicInfo.time}\n`;
+            text += `場所: ${currentReport.basicInfo.location}\n`;
+            text += `気象: ${currentReport.basicInfo.weather} / ${currentReport.basicInfo.temperature}\n\n`;
 
-export default FireInvestigationApp;
+            text += `■ 関係者・目撃者\n`;
+            currentReport.people.forEach((p, i) => {
+            const ageStr = p.age ? ` (${p.age}歳)` : '';
+            const genderStr = p.gender ? ` / ${p.gender}` : '';
+            const birthStr = p.birthDate ? ` 生年月日:${p.birthDate}` : '';
+            text += `${i+1}. [${p.type}] ${p.name}${ageStr}${genderStr}${birthStr}\n`;
+            text += `   連絡先: ${p.contact}\n`;
+            text += `   発見位置: ${p.locationAtDiscovery}\n`;
+            text += `   証言: ${p.statement}\n`;
+            });
+            text += `\n`;
+
+            text += `■ 発見時の状況\n`;
+            text += `箇所: ${currentReport.discovery.location}\n`;
+            text += `性状: ${currentReport.discovery.state}\n`;
+            text += `煙/炎: ${currentReport.discovery.smokeColor} / ${currentReport.discovery.flameColor}\n`;
+            text += `臭気/音: ${currentReport.discovery.odor} / ${currentReport.discovery.sound}\n`;
+            text += `施錠: ${currentReport.discovery.entryStatus}\n\n`;
+
+            text += `■ 時系列\n`;
+            const sortedTimeline = [...currentReport.timeline].sort((a, b) => {
+            if (!a.time && !b.time) return 0;
+            if (!a.time) return 1;
+            if (!b.time) return -1;
+            return a.time.localeCompare(b.time);
+            });
+            sortedTimeline.forEach(t => {
+            const timeStr = t.time ? t.time : '(時刻未定)';
+            text += `${timeStr} : ${t.description}\n`;
+            });
+            text += `\n`;
+
+            text += `■ その他\n${currentReport.notes}\n`;
+            return text;
+        };
+
+        const copyToClipboard = () => {
+            const text = generateTextReport();
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+            document.execCommand('copy');
+            showDialog('成功', 'クリップボードにコピーしました');
+            } catch (err) {
+            showDialog('エラー', 'コピーに失敗しました。手動でコピーしてください。', 'error');
+            }
+            document.body.removeChild(textArea);
+        };
+
+        const downloadTextFile = () => {
+            const text = generateTextReport();
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const dateStr = currentReport.basicInfo.date || 'nodate';
+            const nameStr = currentReport.basicInfo.incidentName || 'report';
+            a.download = `${dateStr}_${nameStr}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        const handlePrint = () => {
+            window.print();
+        };
+
+        return (
+            <div className="bg-zinc-100 min-h-screen p-4 flex flex-col items-center print:bg-white print:p-0">
+            
+            <div className="no-print bg-white border-b border-slate-200 w-full max-w-3xl mb-6 p-4 rounded-xl shadow-md flex justify-between items-center">
+                <button onClick={() => setView('list')} className="text-slate-500 hover:text-slate-800 hover:bg-slate-100 p-2 rounded-full transition-colors">
+                <ArrowLeft size={22} />
+                </button>
+                <h2 className="font-bold text-slate-800 tracking-wide">OUTPUT PREVIEW</h2>
+                <button onClick={() => { setView('edit'); }} className="text-slate-600 font-bold hover:bg-slate-100 px-4 py-2 rounded-lg transition-colors">
+                編集に戻る
+                </button>
+            </div>
+
+            <div className="print-content bg-white w-full max-w-3xl p-8 rounded-xl shadow-2xl mb-6 text-sm md:text-base font-mono whitespace-pre-wrap leading-relaxed border border-slate-100">
+                {generateTextReport()}
+            </div>
+
+            <div className="no-print flex flex-col md:flex-row gap-4 w-full max-w-3xl mb-10">
+                <button 
+                onClick={copyToClipboard}
+                className="flex-1 bg-white border border-slate-300 text-slate-700 py-4 rounded-lg shadow-sm hover:bg-slate-50 flex justify-center items-center gap-2 font-bold transition-all"
+                >
+                <Copy size={20} /> コピー
+                </button>
+                <button 
+                onClick={downloadTextFile}
+                className="flex-1 bg-slate-800 text-white py-4 rounded-lg shadow-lg hover:bg-slate-900 flex justify-center items-center gap-2 font-bold transition-all"
+                >
+                <Download size={20} className="text-amber-400" /> テキスト保存
+                </button>
+                <button 
+                onClick={handlePrint}
+                className="flex-1 bg-amber-500 text-white py-4 rounded-lg shadow-lg hover:bg-amber-600 flex justify-center items-center gap-2 font-bold transition-all"
+                >
+                <Printer size={20} /> 印刷 / PDF
+                </button>
+            </div>
+            </div>
+        );
+        };
+
+        // ---------------- Main Component ----------------
+
+        const FireInvestigationApp = () => {
+        const [view, setView] = useState('list');
+        const [reports, setReports] = useState([]);
+        const [currentReport, setCurrentReport] = useState(null);
+        const [activeSection, setActiveSection] = useState('basic');
+        const [modal, setModal] = useState({
+            isOpen: false, title: '', message: '', type: 'info', onConfirm: null
+        });
+
+        useEffect(() => {
+            const savedReports = localStorage.getItem('fireInvestigationReports');
+            if (savedReports) {
+            setReports(JSON.parse(savedReports));
+            }
+        }, []);
+
+        useEffect(() => {
+            localStorage.setItem('fireInvestigationReports', JSON.stringify(reports));
+        }, [reports]);
+
+        const openDialog = (title, message, type = 'info') => {
+            setModal({ isOpen: true, title, message, type, onConfirm: null });
+        };
+
+        const openConfirm = (title, message, onConfirm) => {
+            setModal({ isOpen: true, title, message, type: 'confirm', onConfirm });
+        };
+
+        const closeModal = () => {
+            setModal(prev => ({ ...prev, isOpen: false }));
+        };
+
+        const createNewReport = () => {
+            const newReport = {
+            id: Date.now().toString(),
+            createdAt: new Date().toISOString(),
+            basicInfo: { incidentName: '', date: '', time: '', location: '', weather: '', temperature: '' },
+            people: [],
+            discovery: { location: '', state: '', smokeColor: '', flameColor: '', odor: '', sound: '', entryStatus: '' },
+            timeline: [],
+            notes: ''
+            };
+            setCurrentReport(newReport);
+            setView('edit');
+            setActiveSection('basic');
+        };
+
+        const updateReport = (section, data) => {
+            setCurrentReport(prev => ({ ...prev, [section]: data }));
+        };
+
+        const saveCurrentReport = () => {
+            setReports(prev => {
+            const existingIndex = prev.findIndex(r => r.id === currentReport.id);
+            if (existingIndex >= 0) {
+                const updated = [...prev];
+                updated[existingIndex] = currentReport;
+                return updated;
+            } else {
+                return [currentReport, ...prev];
+            }
+            });
+            openDialog('保存完了', '調査記録を保存しました。');
+        };
+
+        const deleteReport = (id) => {
+            openConfirm(
+            '削除の確認',
+            'この調査記録を削除してもよろしいですか？この操作は取り消せません。',
+            () => {
+                setReports(prev => prev.filter(r => r.id !== id));
+                if (currentReport && currentReport.id === id) {
+                setCurrentReport(null);
+                }
+                setView('list');
+            }
+            );
+        };
+
+        const addPerson = () => {
+            const newPerson = {
+            id: Date.now(), type: '第一発見者', name: '', birthDate: '', age: '', gender: '',
+            contact: '', locationAtDiscovery: '', action: '', statement: ''
+            };
+            setCurrentReport(prev => ({ ...prev, people: [...prev.people, newPerson] }));
+        };
+
+        const updatePerson = (id, field, value) => {
+            setCurrentReport(prev => ({ ...prev, people: prev.people.map(p => p.id === id ? { ...p, [field]: value } : p) }));
+        };
+
+        const removePerson = (id) => {
+            setCurrentReport(prev => ({ ...prev, people: prev.people.filter(p => p.id !== id) }));
+        };
+
+        const addTimelineEvent = () => {
+            const newEvent = { id: Date.now(), time: '', description: '' };
+            setCurrentReport(prev => ({ ...prev, timeline: [...prev.timeline, newEvent] }));
+        };
+
+        const updateTimelineEvent = (id, field, value) => {
+            setCurrentReport(prev => ({ ...prev, timeline: prev.timeline.map(t => t.id === id ? { ...t, [field]: value } : t) }));
+        };
+
+        const removeTimelineEvent = (id) => {
+            setCurrentReport(prev => ({ ...prev, timeline: prev.timeline.filter(t => t.id !== id) }));
+        };
+
+        return (
+            <div className="min-h-screen bg-zinc-100 font-sans text-slate-900 selection:bg-amber-200 selection:text-slate-900">
+            <CustomModal 
+                isOpen={modal.isOpen} onClose={closeModal} title={modal.title} 
+                message={modal.message} type={modal.type} onConfirm={modal.onConfirm}
+            />
+
+            {view === 'list' && (
+                <ListView 
+                reports={reports} createNewReport={createNewReport} setCurrentReport={setCurrentReport} 
+                setView={setView} deleteReport={deleteReport} 
+                />
+            )}
+            {view === 'edit' && (
+                <EditView 
+                currentReport={currentReport} setView={setView} saveCurrentReport={saveCurrentReport} 
+                deleteReport={deleteReport} activeSection={activeSection} setActiveSection={setActiveSection} 
+                updateReport={updateReport} addPerson={addPerson} updatePerson={updatePerson} 
+                removePerson={removePerson} addTimelineEvent={addTimelineEvent} 
+                updateTimelineEvent={updateTimelineEvent} removeTimelineEvent={removeTimelineEvent}
+                />
+            )}
+            {view === 'preview' && (
+                <PreviewView 
+                currentReport={currentReport} setView={setView} showDialog={openDialog}
+                />
+            )}
+            </div>
+        );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<FireInvestigationApp />);
+    </script>
+</body>
+</html>
