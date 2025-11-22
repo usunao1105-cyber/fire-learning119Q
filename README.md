@@ -145,7 +145,7 @@ e-Learning119Q  救急業務
 
     <div class="card">
       <div class="lesson-title">Lesson 8</div>
-      <div class="lesson-desc">脳卒中・心疾患の初期対応</div>
+      <div class="lesson-desc">火災現場等の調査記録</div>
       <a href="lesson8/index.html" class="button">▶ 学習する</a>
     </div>
 
