@@ -151,7 +151,7 @@ e-Learning119Q  救急業務
 
     <div class="card">
       <div class="lesson-title">Lesson 9</div>
-      <div class="lesson-desc">小児・高齢者の救急</div>
+      <div class="lesson-desc">救急消耗品管理</div>
       <a href="lesson9/index.html" class="button">▶ 学習する</a>
     </div>
 
