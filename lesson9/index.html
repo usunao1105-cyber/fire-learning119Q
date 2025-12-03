@@ -2,671 +2,1161 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>救急アドレナリン管理</title>
-    <style>
-        :root {
-            --primary: #0056b3;
-            --accent: #eef2f6;
-            --text: #333;
-            --safe: #28a745;    /* 緑：安全 */
-            --warn: #ffc107;    /* 黄：期限切迫 */
-            --danger: #dc3545;  /* 赤：期限切れ・使用 */
-            --border: #ddd;
-        }
-
-        * { box-sizing: border-box; touch-action: manipulation; }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f4f7f6;
-            color: var(--text);
-            margin: 0;
-            padding: 0;
-            padding-bottom: 80px; /* フッター用スペース */
-        }
-
-        /* ヘッダー */
-        header {
-            background: var(--primary);
-            color: white;
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        header h1 { margin: 0; font-size: 1.2rem; }
-        header p { margin: 0; font-size: 0.8rem; opacity: 0.9; }
-
-        /* メインコンテナ */
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 15px;
-        }
-
-        /* カードスタイル */
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-
-        /* フォーム要素 */
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            font-size: 0.9rem;
-            color: #555;
-        }
-
-        select, input[type="text"], input[type="date"] {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 1rem;
-            background: #fff;
-            -webkit-appearance: none;
-        }
-
-        /* グリッドレイアウト */
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 10px;
-        }
-
-        /* 状態選択ボタン */
-        .status-selector {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .status-option {
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            padding: 10px;
-            text-align: center;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s;
-        }
-        .status-option.selected {
-            border-color: var(--primary);
-            background-color: #e6f0ff;
-            color: var(--primary);
-            font-weight: bold;
-        }
-
-        /* ボタン */
-        .btn {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            display: inline-block;
-        }
-        .btn:active { opacity: 0.8; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-outline { background: white; border: 1px solid var(--primary); color: var(--primary); margin-top: 10px;}
-        .btn-danger { background: var(--danger); color: white; margin-top: 10px; }
-        .btn-copy { background: #444; color: white; margin-top: 10px; font-size: 0.9rem; padding: 10px;}
-        .btn-sm { padding: 8px 12px; font-size: 0.9rem; width: auto; margin-top: 5px; margin-right: 5px;}
-        .btn-edit { background: var(--primary); color: white; }
-
-        /* 一覧リスト */
-        .inventory-list {
-            list-style: none;
-            padding: 0;
-        }
-        .inventory-item {
-            background: white;
-            border-left: 6px solid #ccc;
-            padding: 12px;
-            margin-bottom: 10px;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            position: relative;
-        }
-        
-        .status-ok { border-left-color: var(--safe); }
-        .status-warn { border-left-color: var(--warn); background-color: #fffdf5; }
-        .status-expired { border-left-color: var(--danger); background-color: #fff5f5; }
-
-        .item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-        .item-id { font-weight: bold; font-size: 1.1rem; }
-        .item-badge {
-            font-size: 0.75rem;
-            padding: 3px 8px;
-            border-radius: 12px;
-            color: white;
-        }
-        .badge-safe { background: #6c757d; }
-        .badge-car { background: var(--safe); }
-        .badge-personal { background: #fd7e14; }
-        .badge-used { background: var(--danger); }
-
-        .item-details { font-size: 0.85rem; color: #666; line-height: 1.4; }
-        
-        .item-actions {
-            margin-top: 10px;
-            text-align: right;
-            border-top: 1px solid #eee;
-            padding-top: 8px;
-        }
-
-        /* 下部ナビゲーション */
-        .nav-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: white;
-            display: flex;
-            border-top: 1px solid #ddd;
-            z-index: 999;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-        .nav-item {
-            flex: 1;
-            text-align: center;
-            padding: 12px;
-            color: #888;
-            font-size: 0.8rem;
-            cursor: pointer;
-        }
-        .nav-item.active {
-            color: var(--primary);
-            font-weight: bold;
-            background: #f8f9fa;
-        }
-        .nav-icon {
-            display: block;
-            font-size: 1.2rem;
-            margin-bottom: 2px;
-        }
-
-        .view-section { display: none; }
-        .view-section.active { display: block; }
-        
-        textarea {
-            width: 100%;
-            height: 150px;
-            font-family: monospace;
-            font-size: 0.9rem;
-            border: 1px solid #ccc;
-            padding: 10px;
-            border-radius: 8px;
-        }
-
-        /* カスタムモーダル (確認画面) */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-content {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        .modal-message {
-            font-size: 1rem;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        .modal-buttons button {
-            flex: 1;
-            margin: 0;
-        }
-
-        /* トースト通知 (下部メッセージ) */
-        .toast {
-            visibility: hidden;
-            min-width: 250px;
-            margin-left: -125px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 30px;
-            padding: 16px;
-            position: fixed;
-            z-index: 2100;
-            left: 50%;
-            bottom: 80px;
-            font-size: 0.9rem;
-            opacity: 0;
-            transition: opacity 0.3s, bottom 0.3s;
-        }
-        .toast.show {
-            visibility: visible;
-            opacity: 1;
-            bottom: 90px;
-        }
-    </style>
-</head>
-<body>
-
-<header>
-    <h1>🚑 アドレナリン管理表</h1>
-    <p>最終更新: <span id="lastUpdateDisplay">なし</span></p>
-</header>
-
-<div class="container">
-
-    <!-- ■ 入力画面 ■ -->
-    <div id="view-input" class="view-section active">
-        <div class="card">
-            <div class="grid-2">
-                <div>
-                    <label>隊名（自由入力可）</label>
-                    <input type="text" id="teamInput" list="teamList" placeholder="例: 救急1隊">
-                    <datalist id="teamList"></datalist>
-                </div>
-                <div>
-                    <label>係</label>
-                    <select id="shiftSelect">
-                        <option value="1係">1係</option>
-                        <option value="2係">2係</option>
-                        <option value="3係">3係</option>
-                        <option value="日勤">日勤</option>
-                    </select>
-                </div>
-            </div>
-
-            <label>薬剤ID (番号/バーコード)</label>
-            <input type="text" id="drugId" placeholder="例: A-101" autocomplete="off">
-
-            <label>使用期限</label>
-            <input type="date" id="expiryDate">
-
-            <label>現在の状態を選択</label>
-            <div class="status-selector" id="statusSelector">
-                <div class="status-option" onclick="selectStatus('safe', this)" data-val="safe">🏢 金庫 (在庫)</div>
-                <div class="status-option selected" onclick="selectStatus('car', this)" data-val="car">🚑 車両積載</div>
-                <div class="status-option" onclick="selectStatus('personal', this)" data-val="personal">🎒 個人持出</div>
-                <div class="status-option" onclick="selectStatus('used', this)" style="color:var(--danger); border-color:var(--danger);" data-val="used">💉 使用/廃棄</div>
-            </div>
-            
-            <label>担当者名（任意）</label>
-            <input type="text" id="operatorName" placeholder="氏名">
-
-            <button class="btn btn-primary" onclick="addData()">状況を更新・登録</button>
-        </div>
-    </div>
-
-    <!-- ■ 一覧画面 ■ -->
-    <div id="view-list" class="view-section">
-        <div class="card" style="background:none; box-shadow:none; padding:0;">
-            <p style="text-align:center; font-size:0.8rem; color:#666; margin-bottom:10px;">
-                <span style="display:inline-block; width:10px; height:10px; background:var(--danger);"></span> 期限切れ 
-                <span style="display:inline-block; width:10px; height:10px; background:var(--warn); margin-left:10px;"></span> 3ヶ月以内
-            </p>
-            <ul id="inventoryList" class="inventory-list">
-                <!-- ここにリストが生成されます -->
-            </ul>
-            <button class="btn btn-danger" onclick="requestClearAll()">⚠ 全データを消去する</button>
-        </div>
-    </div>
-
-    <!-- ■ 報告画面 ■ -->
-    <div id="view-report" class="view-section">
-        <div class="card">
-            <label>日報・引継ぎ用テキスト</label>
-            <textarea id="reportArea"></textarea> <!-- readonlyを削除 -->
-            
-            <div style="display:flex; gap:10px;">
-                <button class="btn btn-copy" onclick="copyReport()" style="flex:2;">📋 テキストをコピー</button>
-                <button class="btn btn-outline" onclick="clearReportText()" style="flex:1; margin-top:10px; border-color:#888; color:#888;">🗑 クリア</button>
-            </div>
-        </div>
-        
-        <div class="card">
-            <h3>運用ガイド</h3>
-            <ul style="font-size:0.85rem; padding-left:20px; color:#555;">
-                <li><strong>リストの編集:</strong> 一覧画面の「✏️編集」ボタンを押すと、入力画面にデータが呼び出されます。状態だけ変更して「更新」を押せば、再入力の手間がありません。</li>
-                <li><strong>隊名の入力:</strong> リストから選ぶことも、直接入力することも可能です。</li>
-            </ul>
-        </div>
-    </div>
-
-</div>
-
-<!-- 下部ナビゲーション -->
-<nav class="nav-bar">
-    <div class="nav-item active" onclick="switchView('input', this)">
-        <span class="nav-icon">✏️</span>
-        入力
-    </div>
-    <div class="nav-item" onclick="switchView('list', this)">
-        <span class="nav-icon">📋</span>
-        一覧
-    </div>
-    <div class="nav-item" onclick="switchView('report', this)">
-        <span class="nav-icon">✉️</span>
-        報告
-    </div>
-</nav>
-
-<!-- カスタムモーダル -->
-<div id="customModal" class="modal-overlay">
-    <div class="modal-content">
-        <div id="modalMessage" class="modal-message">確認</div>
-        <div class="modal-buttons">
-            <button class="btn btn-outline" onclick="closeModal()">キャンセル</button>
-            <button class="btn btn-danger" id="modalConfirmBtn">実行</button>
-        </div>
-    </div>
-</div>
-
-<!-- トースト通知 -->
-<div id="toast" class="toast">メッセージ</div>
-
-<script>
-    const STORAGE_KEY = 'emt_adrenaline_v1';
-    let currentStatus = 'car';
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMS Inventory Manager</title>
     
-    // --- 初期設定 ---
-    const teamList = document.getElementById('teamList');
-    // 1-30隊のプリセットを生成
-    for (let i = 1; i <= 30; i++) {
-        const option = document.createElement('option');
-        option.value = `救急${i}隊`;
-        teamList.appendChild(option);
-    }
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Babel (for JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    window.onload = function() {
-        const lastTeam = localStorage.getItem('last_team');
-        const lastShift = localStorage.getItem('last_shift');
-        const lastOp = localStorage.getItem('last_operator');
-        
-        const teamInput = document.getElementById('teamInput');
-        
-        if (lastTeam) teamInput.value = lastTeam;
-        if (lastShift) document.getElementById('shiftSelect').value = lastShift;
-        if (lastOp) document.getElementById('operatorName').value = lastOp;
-
-        renderList();
-    };
-
-    // --- 通知・モーダル制御 ---
-    function showToast(message) {
-        const x = document.getElementById("toast");
-        x.textContent = message;
-        x.className = "toast show";
-        setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
-    }
-
-    function showModal(message, onConfirm) {
-        document.getElementById('modalMessage').textContent = message;
-        document.getElementById('customModal').style.display = 'flex';
-        
-        const confirmBtn = document.getElementById('modalConfirmBtn');
-        const newBtn = confirmBtn.cloneNode(true);
-        confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
-        
-        newBtn.onclick = function() {
-            onConfirm();
-            closeModal();
-        };
-    }
-
-    function closeModal() {
-        document.getElementById('customModal').style.display = 'none';
-    }
-
-    // --- メイン処理 ---
-    function addData() {
-        const drugId = document.getElementById('drugId').value.trim();
-        const expiry = document.getElementById('expiryDate').value;
-        const team = document.getElementById('teamInput').value.trim();
-        const shift = document.getElementById('shiftSelect').value;
-        const operator = document.getElementById('operatorName').value;
-
-        if (!drugId) { showToast('薬剤IDを入力してください'); return; }
-        if (!expiry) { showToast('使用期限を入力してください'); return; }
-        if (!team) { showToast('隊名を入力してください'); return; }
-
-        let data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        const index = data.findIndex(item => item.id === drugId);
-        const newItem = {
-            id: drugId,
-            expiry: expiry,
-            status: currentStatus,
-            team: team,
-            shift: shift,
-            operator: operator,
-            updatedAt: new Date().toLocaleString('ja-JP')
-        };
-
-        if (index > -1) {
-            data[index] = newItem;
-        } else {
-            data.push(newItem);
+    <!-- Import Maps: ライブラリの読み込み先を定義 -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "firebase/app": "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js",
+            "firebase/auth": "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js",
+            "firebase/firestore": "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js",
+            "lucide-react": "https://esm.sh/lucide-react@0.344.0"
         }
-
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        localStorage.setItem('last_team', team);
-        localStorage.setItem('last_shift', shift);
-        localStorage.setItem('last_operator', operator);
-
-        document.getElementById('drugId').value = '';
-        showToast(`ID: ${drugId} を更新しました`);
-        renderList();
     }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div id="root"></div>
 
-    function selectStatus(status, element) {
-        currentStatus = status;
-        document.querySelectorAll('.status-option').forEach(el => {
-            el.classList.remove('selected');
-            el.style.backgroundColor = '';
-            el.style.color = '';
-        });
-        element.classList.add('selected');
-    }
+    <!-- Application Script -->
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { initializeApp } from 'firebase/app';
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            onAuthStateChanged, 
+            signInWithCustomToken,
+            signOut 
+        } from 'firebase/auth';
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            setDoc, 
+            addDoc, 
+            onSnapshot, 
+            updateDoc, 
+            deleteDoc, 
+            serverTimestamp, 
+            writeBatch 
+        } from 'firebase/firestore';
+        import { 
+            LayoutDashboard, Box, Truck, Settings, Plus, AlertTriangle, 
+            CheckCircle, XCircle, Search, Building2, Menu, X, History, 
+            Activity, Edit2, Save, User, Mail, Users, LogIn, LogOut, 
+            ShieldCheck, Download, FileText 
+        } from 'lucide-react';
 
-    // --- 編集機能 ---
-    function loadItemForEdit(id) {
-        const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        const item = data.find(d => d.id === id);
+        // ==========================================
+        //  設定エリア (ここにFirebase設定を貼る)
+        // ==========================================
+        const firebaseConfig = {
+           apiKey: "AIzaSyC5Ml5bnTzQkDVCexSpeG1vGM2J_6lKZXc",
+  authDomain: "ems-inventory-11404.firebaseapp.com",
+  projectId: "ems-inventory-11404",
+  storageBucket: "ems-inventory-11404.firebasestorage.app",
+  messagingSenderId: "889986261442",
+  appId: "1:889986261442:web:f63b5b75861c552361f65b"
+        };
         
-        if (!item) { showToast('データが見つかりません'); return; }
-
-        document.getElementById('drugId').value = item.id;
-        document.getElementById('expiryDate').value = item.expiry;
-        document.getElementById('teamInput').value = item.team;
-        document.getElementById('shiftSelect').value = item.shift;
-        document.getElementById('operatorName').value = item.operator || '';
-
-        const statusOption = document.querySelector(`.status-option[data-val="${item.status}"]`);
-        if (statusOption) selectStatus(item.status, statusOption);
-
-        switchView('input', document.querySelector('.nav-item:first-child'));
-        showToast(`ID: ${id} を読み込みました`);
-    }
-
-    function renderList() {
-        const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        const listEl = document.getElementById('inventoryList');
-        const lastUpdateEl = document.getElementById('lastUpdateDisplay');
+        // データ共有用のアプリID (任意の文字列でOK)
+        const APP_ID = 'ems-inventory-manager-v1';
         
-        listEl.innerHTML = '';
+        // ==========================================
+        //  アプリケーションロジック
+        // ==========================================
 
-        if (data.length === 0) {
-            listEl.innerHTML = '<li style="text-align:center; color:#888; padding:20px;">データがありません。<br>「入力」画面から登録してください。</li>';
-            lastUpdateEl.textContent = "なし";
-            return;
-        }
-
-        const lastItem = data.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
-        if(lastItem) lastUpdateEl.textContent = lastItem.updatedAt;
-
-        data.sort((a, b) => a.id.localeCompare(b.id));
-
-        data.forEach((item, index) => {
-            const today = new Date();
-            const expDate = new Date(item.expiry);
-            const diffDays = (expDate - today) / (1000 * 60 * 60 * 24);
+        // Initialize Firebase
+        // 設定がない場合のダミー初期化（エラー回避用）
+        // projectId がないとエラーになるため、ダミー値にも含める
+        const app = Object.keys(firebaseConfig).length > 0 
+            ? initializeApp(firebaseConfig) 
+            : initializeApp({apiKey: "demo", authDomain: "demo", projectId: "demo-project"}); 
             
-            let statusClass = 'status-ok';
-            let alertText = '';
-            
-            if (diffDays < 0) {
-                statusClass = 'status-expired';
-                alertText = '<span style="color:var(--danger); font-weight:bold;">【期限切】</span> ';
-            } else if (diffDays < 90) {
-                statusClass = 'status-warn';
-                alertText = '<span style="color:#d39e00; font-weight:bold;">【期限迫】</span> ';
-            }
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-            let badgeText = '';
-            let badgeClass = '';
-            switch(item.status) {
-                case 'safe': badgeText = '金庫'; badgeClass = 'badge-safe'; break;
-                case 'car': badgeText = '積載'; badgeClass = 'badge-car'; break;
-                case 'personal': badgeText = '携行'; badgeClass = 'badge-personal'; break;
-                case 'used': badgeText = '使用済'; badgeClass = 'badge-used'; break;
-            }
+        // --- Constants & Types ---
+        const DEFAULT_STATIONS = [
+            { id: 'central', name: '中央消防署 (本部)', type: 'HQ', email: '' },
+            { id: 'station_1', name: '第1分署', type: 'Branch', email: '' },
+            { id: 'station_2', name: '第2分署', type: 'Branch', email: '' },
+            { id: 'station_3', name: '第3分署', type: 'Branch', email: '' },
+            { id: 'station_4', name: '第4分署', type: 'Branch', email: '' },
+            { id: 'station_5', name: '第5分署', type: 'Branch', email: '' },
+        ];
 
-            const li = document.createElement('li');
-            li.className = `inventory-item ${statusClass}`;
-            const safeId = item.id.replace(/'/g, "\\'");
-            
-            li.innerHTML = `
-                <div class="item-header">
-                    <span class="item-id">${alertText}${item.id}</span>
-                    <span class="item-badge ${badgeClass}">${badgeText}</span>
-                </div>
-                <div class="item-details">
-                    期限: <strong>${item.expiry}</strong><br>
-                    場所: ${item.team} (${item.shift})<br>
-                    担当: ${item.operator || '-'}
-                </div>
-                <div class="item-actions">
-                    <button class="btn btn-sm btn-edit" onclick="loadItemForEdit('${safeId}')">✏️ 編集</button>
-                    <button class="btn btn-sm btn-outline" style="border-color:#dc3545; color:#dc3545;" onclick="requestDeleteItem('${safeId}')">🗑 削除</button>
-                </div>
-            `;
-            listEl.appendChild(li);
-        });
-
-        generateReportText(data);
-    }
-
-    function requestDeleteItem(id) {
-        showModal('このデータを削除しますか？', function() {
-            let data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-            const newData = data.filter(item => item.id !== id);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-            renderList();
-            showToast('削除しました');
-        });
-    }
-
-    function requestClearAll() {
-        showModal('全てのデータを消去しますか？\nこの操作は元に戻せません。', function() {
-            localStorage.removeItem(STORAGE_KEY);
-            renderList();
-            showToast('全データを消去しました');
-        });
-    }
-
-    // --- 報告機能 ---
-    function generateReportText(data) {
-        const now = new Date();
-        const reportTitle = `救急アドレナリン管理報告 (${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')})`;
-        
-        let text = `${reportTitle}\n\n`;
-
-        const groups = {
-            'car': { label: '【車両積載】', items: [] },
-            'personal': { label: '【個人携行】', items: [] },
-            'safe': { label: '【金庫保管】', items: [] },
-            'used': { label: '【使用/廃棄】', items: [] }
+        // Default admin user for initialization
+        const DEFAULT_USER = {
+            id: 'admin',
+            name: 'システム管理者',
+            stationId: 'central',
+            year: 2024
         };
 
-        data.forEach(item => {
-            if (groups[item.status]) {
-                groups[item.status].items.push(item);
-            }
-        });
+        const CATEGORIES = ['呼吸器系', '循環器系', '創傷処置', '感染対策', '医薬品', 'その他'];
 
-        Object.keys(groups).forEach(key => {
-            const group = groups[key];
-            if (group.items.length > 0) {
-                text += `${group.label} ${group.items.length}本\n`;
-                group.items.forEach(i => {
-                    text += `- ID:${i.id} / ${i.team}(${i.shift}) / 限:${i.expiry}\n`;
+        // --- Component Definitions ---
+
+        const LoadingSpinner = () => (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+            </div>
+        );
+
+        const Modal = ({ isOpen, onClose, title, children }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center p-4 border-b">
+                            <h3 className="text-lg font-bold text-gray-800">{title}</h3>
+                            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-4">{children}</div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Main App Component ---
+
+        function App() {
+            const [firebaseUser, setFirebaseUser] = useState(null);
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [activeStationId, setActiveStationId] = useState('central');
+            
+            // Login State
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
+            const [loginIdInput, setLoginIdInput] = useState('');
+            const [currentUserProfile, setCurrentUserProfile] = useState(null);
+            const [loginError, setLoginError] = useState('');
+
+            // Data State
+            const [stations, setStations] = useState([]);
+            const [consumables, setConsumables] = useState([]);
+            const [inventory, setInventory] = useState([]);
+            const [requests, setRequests] = useState([]);
+            const [appUsers, setAppUsers] = useState([]);
+            const [loading, setLoading] = useState(true);
+
+            // UI State
+            const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+            const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+            const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+            const [searchTerm, setSearchTerm] = useState('');
+            
+            // Master Edit State
+            const [masterTab, setMasterTab] = useState('consumables');
+            const [editingStationId, setEditingStationId] = useState(null);
+            const [tempStationName, setTempStationName] = useState('');
+            const [tempStationEmail, setTempStationEmail] = useState('');
+
+            // Form State
+            const [newItem, setNewItem] = useState({ name: '', category: 'その他', unit: '個', safetyStock: 10 });
+            const [newStation, setNewStation] = useState({ name: '', type: 'Branch', email: '' });
+            const [newUser, setNewUser] = useState({ id: '', name: '', stationId: 'central', year: new Date().getFullYear() });
+            const [requestCart, setRequestCart] = useState({});
+            const [requesterName, setRequesterName] = useState('');
+
+            // --- Authentication & Initialization ---
+            useEffect(() => {
+                // コンフィグが空の場合は処理を中断（UI側で警告を表示する）
+                if (Object.keys(firebaseConfig).length === 0) {
+                    console.warn("Firebase Config is missing.");
+                    setLoading(false);
+                    return;
+                }
+
+                const initAuth = async () => {
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (error) {
+                        console.error("Auth error:", error);
+                    }
+                };
+
+                initAuth();
+                const unsubscribe = onAuthStateChanged(auth, setFirebaseUser);
+                return () => unsubscribe();
+            }, []);
+
+            // --- Data Sync ---
+            useEffect(() => {
+                if (!firebaseUser) return;
+
+                const itemsRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'consumables');
+                const inventoryRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'inventory');
+                const requestsRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'requests');
+                const stationsRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'stations');
+                const usersRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'users');
+
+                const unsubItems = onSnapshot(itemsRef, (snapshot) => {
+                    setConsumables(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
                 });
-                text += '\n';
+
+                const unsubInventory = onSnapshot(inventoryRef, (snapshot) => {
+                    setInventory(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+                });
+
+                const unsubRequests = onSnapshot(requestsRef, (snapshot) => {
+                    const reqs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    reqs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                    setRequests(reqs);
+                    setLoading(false);
+                });
+
+                const unsubStations = onSnapshot(stationsRef, (snapshot) => {
+                    if (snapshot.empty && !snapshot.metadata.hasPendingWrites) {
+                        const batch = writeBatch(db);
+                        DEFAULT_STATIONS.forEach(s => {
+                            batch.set(doc(db, 'artifacts', APP_ID, 'public', 'data', 'stations', s.id), s);
+                        });
+                        batch.commit();
+                    } else {
+                        const stationList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                        stationList.sort((a, b) => {
+                            if (a.type === 'HQ') return -1;
+                            if (b.type === 'HQ') return 1;
+                            return a.id.localeCompare(b.id);
+                        });
+                        setStations(stationList);
+                    }
+                });
+
+                // Fetch Users and seed default admin if empty
+                const unsubUsers = onSnapshot(usersRef, (snapshot) => {
+                    if (snapshot.empty && !snapshot.metadata.hasPendingWrites) {
+                        setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', DEFAULT_USER.id), DEFAULT_USER);
+                    } else {
+                        setAppUsers(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+                    }
+                });
+
+                return () => {
+                    unsubItems();
+                    unsubInventory();
+                    unsubRequests();
+                    unsubStations();
+                    unsubUsers();
+                };
+            }, [firebaseUser]);
+
+            // --- Login Logic ---
+            const handleLogin = (e) => {
+                e.preventDefault();
+                setLoginError('');
+                
+                const userProfile = appUsers.find(u => u.id === loginIdInput.trim());
+                
+                if (userProfile) {
+                    setCurrentUserProfile(userProfile);
+                    setIsAuthenticated(true);
+                    setActiveStationId(userProfile.stationId);
+                    setRequesterName(userProfile.name);
+                } else {
+                    setLoginError('IDが見つかりません。マスタ登録されているIDを入力してください。');
+                }
+            };
+
+            const handleLogout = () => {
+                setIsAuthenticated(false);
+                setCurrentUserProfile(null);
+                setLoginIdInput('');
+                setActiveTab('dashboard');
+            };
+
+            // --- Logic Helpers ---
+            
+            const getStock = (stationId, consumableId) => {
+                return inventory.find(i => i.stationId === stationId && i.consumableId === consumableId)?.quantity || 0;
+            };
+
+            const updateStock = async (stationId, consumableId, newQty) => {
+                if (!firebaseUser) return;
+                const invId = `${stationId}_${consumableId}`;
+                const ref = doc(db, 'artifacts', APP_ID, 'public', 'data', 'inventory', invId);
+                
+                await setDoc(ref, {
+                    stationId,
+                    consumableId,
+                    quantity: Math.max(0, newQty)
+                }, { merge: true });
+            };
+
+            const handleCreateConsumable = async () => {
+                if (!newItem.name) return;
+                try {
+                    await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'consumables'), newItem);
+                    setIsItemModalOpen(false);
+                    setNewItem({ name: '', category: 'その他', unit: '個', safetyStock: 10 });
+                } catch (e) {
+                    console.error(e);
+                    alert("エラーが発生しました");
+                }
+            };
+
+            const handleCreateStation = async () => {
+                if (!newStation.name) return;
+                try {
+                    await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'stations'), {
+                        ...newStation,
+                        type: 'Branch'
+                    });
+                    setNewStation({ name: '', type: 'Branch', email: '' });
+                    alert("消防署を追加しました");
+                } catch (e) {
+                    console.error(e);
+                    alert("エラーが発生しました");
+                }
+            };
+
+            const handleCreateUser = async () => {
+                if (!newUser.id || !newUser.name) {
+                    alert("IDと名前は必須です");
+                    return;
+                }
+                if (appUsers.some(u => u.id === newUser.id)) {
+                    alert("このIDは既に使用されています");
+                    return;
+                }
+
+                try {
+                    await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', newUser.id), newUser);
+                    setNewUser({ id: '', name: '', stationId: 'central', year: new Date().getFullYear() });
+                    alert("職員を追加しました");
+                } catch (e) {
+                    console.error(e);
+                    alert("エラーが発生しました");
+                }
+            };
+
+            const handleUpdateStation = async (id) => {
+                if (!tempStationName) return;
+                try {
+                    await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'stations', id), {
+                        name: tempStationName,
+                        email: tempStationEmail
+                    });
+                    setEditingStationId(null);
+                    setTempStationName('');
+                    setTempStationEmail('');
+                } catch (e) {
+                    console.error(e);
+                    alert("更新に失敗しました");
+                }
+            };
+
+            const handleSubmitRequest = async () => {
+                if (Object.keys(requestCart).length === 0) return;
+                const finalRequesterName = requesterName || currentUserProfile?.name || '不明';
+
+                const items = Object.entries(requestCart).map(([id, qty]) => {
+                    const item = consumables.find(c => c.id === id);
+                    return {
+                        consumableId: id,
+                        quantity: qty,
+                        name: item?.name || 'Unknown',
+                        unit: item?.unit || ''
+                    };
+                });
+
+                try {
+                    await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'requests'), {
+                        fromStationId: activeStationId,
+                        status: 'pending',
+                        items,
+                        requesterName: finalRequesterName, 
+                        requesterId: currentUserProfile?.id || firebaseUser.uid,
+                        createdAt: serverTimestamp()
+                    });
+                    setRequestCart({});
+                    setIsRequestModalOpen(false);
+                } catch (e) {
+                    console.error(e);
+                    alert("請求送信に失敗しました");
+                }
+            };
+
+            const handleApproveRequest = async (request) => {
+                if (request.status !== 'pending') return;
+
+                const defaultApprover = currentUserProfile?.name || "本部担当者";
+                const approverName = window.prompt("承認担当者名を入力してください:", defaultApprover);
+                if (!approverName) return;
+
+                const batch = writeBatch(db);
+                const reqRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'requests', request.id);
+                batch.update(reqRef, { 
+                    status: 'approved',
+                    approverName: approverName,
+                    approverId: currentUserProfile?.id || firebaseUser.uid,
+                    approvedAt: serverTimestamp()
+                });
+
+                for (const item of request.items) {
+                    const hqStation = stations.find(s => s.type === 'HQ') || stations[0];
+                    const centralStock = getStock(hqStation.id, item.consumableId);
+                    const centralRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'inventory', `${hqStation.id}_${item.consumableId}`);
+                    batch.set(centralRef, { 
+                        stationId: hqStation.id, 
+                        consumableId: item.consumableId, 
+                        quantity: Math.max(0, centralStock - item.quantity) 
+                    });
+
+                    const stationStock = getStock(request.fromStationId, item.consumableId);
+                    const stationRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'inventory', `${request.fromStationId}_${item.consumableId}`);
+                    batch.set(stationRef, {
+                        stationId: request.fromStationId,
+                        consumableId: item.consumableId,
+                        quantity: stationStock + item.quantity
+                    });
+                }
+
+                await batch.commit();
+
+                const targetStation = stations.find(s => s.id === request.fromStationId);
+                if (targetStation?.email) {
+                    const subject = encodeURIComponent(`【消耗品承認】物品の出庫が完了しました`);
+                    const body = encodeURIComponent(
+                        `${targetStation.name} 御中\n\n` +
+                        `お疲れ様です。${approverName}です。\n` +
+                        `以下の物品請求を承認し、出庫手続きを行いました。\n\n` +
+                        `----------------------------------------\n` +
+                        request.items.map(i => `・${i.name}: ${i.quantity}${i.unit}`).join('\n') + '\n' +
+                        `----------------------------------------\n\n` +
+                        `到着まで今しばらくお待ちください。\n` +
+                        `以上、よろしくお願いいたします。`
+                    );
+                    window.location.href = `mailto:${targetStation.email}?subject=${subject}&body=${body}`;
+                } else {
+                    alert("承認・出庫が完了しました。\n(署のメールアドレスが未登録のためメールは作成されませんでした)");
+                }
+            };
+
+            // --- CSV Export Helper ---
+            const downloadCSV = (content, filename) => {
+                const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+                const blob = new Blob([bom, content], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.click();
+                window.URL.revokeObjectURL(url);
+            };
+
+            const handleExportConsumables = () => {
+                const headers = ['ID', '品名', 'カテゴリ', '単位', '安全在庫数'];
+                const rows = consumables.map(c => [c.id, c.name, c.category, c.unit, c.safetyStock]);
+                const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+                downloadCSV(csvContent, `consumables_master_${new Date().toISOString().split('T')[0]}.csv`);
+            };
+
+            const handleExportInventory = () => {
+                const headers = ['品名', '署名', '在庫数', '単位'];
+                const rows = [];
+                inventory.forEach(inv => {
+                    const item = consumables.find(c => c.id === inv.consumableId);
+                    const station = stations.find(s => s.id === inv.stationId);
+                    if (item && station && inv.quantity > 0) {
+                        rows.push([item.name, station.name, inv.quantity, item.unit].join(','));
+                    }
+                });
+                const csvContent = [headers.join(','), ...rows].join('\n');
+                downloadCSV(csvContent, `inventory_snapshot_${new Date().toISOString().split('T')[0]}.csv`);
+            };
+
+            const handleExportHistory = () => {
+                const headers = ['日時', 'ステータス', '署名', '請求担当', '承認担当', '内容'];
+                const rows = requests.map(req => {
+                    const station = stations.find(s => s.id === req.fromStationId)?.name || 'Unknown';
+                    const date = req.createdAt?.seconds ? new Date(req.createdAt.seconds * 1000).toISOString() : '';
+                    const itemsStr = req.items.map(i => `${i.name}(${i.quantity})`).join('|');
+                    return [
+                        date,
+                        req.status,
+                        station,
+                        req.requesterName || '',
+                        req.approverName || '',
+                        itemsStr
+                    ].join(',');
+                });
+                const csvContent = [headers.join(','), ...rows].join('\n');
+                downloadCSV(csvContent, `request_history_${new Date().toISOString().split('T')[0]}.csv`);
+            };
+
+            const handleExportUsers = () => {
+                const headers = ['年度', 'ID', '氏名', '所属署ID'];
+                const rows = appUsers.map(u => [u.year, u.id, u.name, u.stationId]);
+                const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+                downloadCSV(csvContent, `users_master_${new Date().toISOString().split('T')[0]}.csv`);
+            };
+
+            const activeStation = stations.find(s => s.id === activeStationId) || stations[0] || { id: 'loading', name: 'Loading...', type: 'Branch' };
+            const lowStockItems = consumables.filter(c => getStock(activeStationId, c.id) <= c.safetyStock);
+            const filteredItems = consumables.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+            // --- Render ---
+
+            // Config Warning
+            if (Object.keys(firebaseConfig).length === 0) {
+                return (
+                    <div className="flex h-screen items-center justify-center p-4 bg-gray-100">
+                        <div className="bg-white p-8 rounded-lg shadow-xl max-w-lg text-center">
+                            <AlertTriangle size={48} className="text-red-500 mx-auto mb-4" />
+                            <h2 className="text-xl font-bold mb-2">Firebase設定が必要です</h2>
+                            <p className="text-gray-600 mb-4">
+                                このHTMLファイルを開いて、<code>const firebaseConfig = ...</code> の部分に
+                                ご自身のFirebaseプロジェクトの設定情報を貼り付けてください。
+                            </p>
+                        </div>
+                    </div>
+                );
             }
-        });
 
-        document.getElementById('reportArea').value = text;
-    }
+            // Login Screen
+            if (!isAuthenticated) {
+                return (
+                    <div className="flex h-screen bg-slate-100 justify-center items-center p-4">
+                        <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+                            <div className="text-center mb-8">
+                                <div className="bg-red-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-red-200 shadow-xl">
+                                    <Activity size={40} className="text-white" />
+                                </div>
+                                <h1 className="text-2xl font-bold text-gray-800">EMS Inventory</h1>
+                                <p className="text-gray-500 text-sm mt-1">救急消耗品管理システム</p>
+                            </div>
+                            
+                            <form onSubmit={handleLogin} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">職員ID (会員番号)</label>
+                                    <div className="relative">
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                            <User size={20} />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+                                            placeholder="例: 2024-C01, admin"
+                                            value={loginIdInput}
+                                            onChange={(e) => setLoginIdInput(e.target.value)}
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+                                
+                                {loginError && (
+                                    <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-center gap-2">
+                                        <AlertTriangle size={16} />
+                                        {loginError}
+                                    </div>
+                                )}
 
-    // テキスト消去
-    function clearReportText() {
-        document.getElementById('reportArea').value = '';
-    }
+                                <button
+                                    type="submit"
+                                    className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-red-200"
+                                >
+                                    <LogIn size={20} />
+                                    ログイン
+                                </button>
+                            </form>
+                            <div className="mt-6 text-center text-xs text-gray-400">
+                                <p>※初期ID: <span className="font-mono bg-gray-100 px-1 rounded">admin</span></p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
 
-    function copyReport() {
-        const copyText = document.getElementById("reportArea");
-        copyText.select();
-        copyText.setSelectionRange(0, 99999);
-        
-        try {
-            document.execCommand("copy");
-            showToast("報告テキストをコピーしました");
-        } catch (e) {
-            showToast("コピーできませんでした");
+            // Loading
+            if (loading && !firebaseUser) return <LoadingSpinner />;
+
+            return (
+                <div className="flex h-screen bg-gray-50 font-sans text-gray-900">
+                    {/* Sidebar */}
+                    <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-white transform transition-transform duration-200 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+                        <div className="p-6 flex items-center gap-3 border-b border-slate-700">
+                            <div className="p-2 bg-red-600 rounded-lg">
+                                <Activity size={24} className="text-white" />
+                            </div>
+                            <div className="leading-tight">
+                                <h1 className="font-bold text-lg">EMS Inventory</h1>
+                                <p className="text-xs text-slate-400">Ver 2.1.0</p>
+                            </div>
+                            <button onClick={() => setIsSidebarOpen(false)} className="md:hidden ml-auto">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <nav className="p-4 space-y-2">
+                            {['dashboard', 'inventory', 'requests', 'history', 'master'].map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors capitalize ${activeTab === tab ? 'bg-red-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
+                                >
+                                    {tab === 'dashboard' && <><LayoutDashboard size={20} /> ダッシュボード</>}
+                                    {tab === 'inventory' && <><Box size={20} /> 在庫一覧・入出庫</>}
+                                    {tab === 'requests' && (
+                                        <>
+                                            <Truck size={20} /> 
+                                            請求・配送
+                                            {requests.filter(r => r.status === 'pending' && (activeStation.type === 'HQ' || r.fromStationId === activeStationId)).length > 0 && (
+                                                <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                                    {requests.filter(r => r.status === 'pending' && (activeStation.type === 'HQ' || r.fromStationId === activeStationId)).length}
+                                                </span>
+                                            )}
+                                        </>
+                                    )}
+                                    {tab === 'history' && <><History size={20} /> 履歴ログ</>}
+                                    {tab === 'master' && <><Settings size={20} /> マスタ設定</>}
+                                </button>
+                            ))}
+                        </nav>
+
+                        <div className="absolute bottom-0 w-full p-4 border-t border-slate-800">
+                            <button 
+                                onClick={handleLogout}
+                                className="w-full flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm px-2"
+                            >
+                                <LogOut size={16} />
+                                ログアウト
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden">
+                        {/* Header */}
+                        <header className="bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm z-30">
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => setIsSidebarOpen(true)} className="md:hidden text-gray-500">
+                                    <Menu size={24} />
+                                </button>
+                                <div className="flex items-center gap-2">
+                                    <Building2 size={20} className="text-gray-400" />
+                                    <select 
+                                        value={activeStationId}
+                                        onChange={(e) => setActiveStationId(e.target.value)}
+                                        className="bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 font-bold"
+                                    >
+                                        {stations.map(s => (
+                                            <option key={s.id} value={s.id}>{s.name} {s.type === 'HQ' ? '(在庫元)' : ''}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
+                                <div className="text-right leading-tight">
+                                    <p className="text-sm font-bold text-gray-800">{currentUserProfile?.name}</p>
+                                    <p className="text-[10px] text-gray-500">{currentUserProfile?.id}</p>
+                                </div>
+                                <div className="h-8 w-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                                    <User size={16} />
+                                </div>
+                            </div>
+                        </header>
+
+                        {/* Content Area */}
+                        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+                            
+                            {/* Dashboard View */}
+                            {activeTab === 'dashboard' && (
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                                            <div className="flex items-center gap-4">
+                                                <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                                                    <Box size={24} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-gray-500">管理品目数</p>
+                                                    <h3 className="text-2xl font-bold text-gray-800">{consumables.length}</h3>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`p-3 rounded-lg ${lowStockItems.length > 0 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                                                    <AlertTriangle size={24} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-gray-500">在庫アラート ({activeStation.name})</p>
+                                                    <h3 className="text-2xl font-bold text-gray-800">{lowStockItems.length} <span className="text-sm font-normal">品目</span></h3>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                                            <div className="flex items-center gap-4">
+                                                <div className="p-3 bg-purple-50 text-purple-600 rounded-lg">
+                                                    <Truck size={24} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-gray-500">未処理の請求</p>
+                                                    <h3 className="text-2xl font-bold text-gray-800">
+                                                        {requests.filter(r => r.status === 'pending' && (activeStation.type === 'HQ' || r.fromStationId === activeStationId)).length}
+                                                    </h3>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {lowStockItems.length > 0 && (
+                                        <div className="bg-red-50 border border-red-100 rounded-xl p-6">
+                                            <h3 className="text-red-800 font-bold mb-4 flex items-center gap-2">
+                                                <AlertTriangle size={18} />
+                                                在庫不足アラート
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                {lowStockItems.map(item => (
+                                                    <div key={item.id} className="bg-white p-3 rounded-lg shadow-sm flex justify-between items-center">
+                                                        <div>
+                                                            <p className="font-medium text-gray-800">{item.name}</p>
+                                                            <p className="text-xs text-gray-500">{item.category}</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-xl font-bold text-red-600">{getStock(activeStationId, item.id)}</p>
+                                                            <p className="text-xs text-gray-400">安全在庫: {item.safetyStock}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Inventory View */}
+                            {activeTab === 'inventory' && (
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                    <div className="p-4 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                            <Box size={20} />
+                                            在庫一覧 ({activeStation.name})
+                                        </h2>
+                                        <div className="flex gap-2 w-full md:w-auto">
+                                            <div className="relative flex-1 md:w-64">
+                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><Search size={18} /></div>
+                                                <input
+                                                    type="text"
+                                                    placeholder="品名を検索..."
+                                                    className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left text-sm">
+                                            <thead className="bg-gray-50 text-gray-600 border-b">
+                                                <tr>
+                                                    <th className="p-4">品名</th>
+                                                    <th className="p-4">カテゴリ</th>
+                                                    <th className="p-4 text-center">現在庫</th>
+                                                    <th className="p-4 text-center">単位</th>
+                                                    <th className="p-4 text-center">操作</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y">
+                                                {filteredItems.map(item => {
+                                                    const currentStock = getStock(activeStationId, item.id);
+                                                    const isLow = currentStock <= item.safetyStock;
+                                                    return (
+                                                        <tr key={item.id} className="hover:bg-gray-50 group">
+                                                            <td className="p-4 font-medium text-gray-800">{item.name}</td>
+                                                            <td className="p-4 text-gray-500">
+                                                                <span className="px-2 py-1 bg-gray-100 rounded text-xs">{item.category}</span>
+                                                            </td>
+                                                            <td className="p-4 text-center">
+                                                                <span className={`font-bold text-lg ${isLow ? 'text-red-600' : 'text-gray-800'}`}>
+                                                                    {currentStock}
+                                                                </span>
+                                                            </td>
+                                                            <td className="p-4 text-center text-gray-500">{item.unit}</td>
+                                                            <td className="p-4 text-center">
+                                                                <div className="flex items-center justify-center gap-2">
+                                                                    <button
+                                                                        onClick={() => updateStock(activeStationId, item.id, currentStock - 1)}
+                                                                        className="w-8 h-8 flex items-center justify-center rounded bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-red-600 transition-colors"
+                                                                    >-</button>
+                                                                    <button
+                                                                        onClick={() => updateStock(activeStationId, item.id, currentStock + 1)}
+                                                                        className="w-8 h-8 flex items-center justify-center rounded bg-gray-100 hover:bg-green-100 text-gray-600 hover:text-green-600 transition-colors"
+                                                                    ><Plus size={16} /></button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                                {filteredItems.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan="5" className="p-8 text-center text-gray-400">該当する品目がありません</td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ... (Other views logic is similar, omitted for brevity but included in the main logic block above) ... */}
+                            {/* Requests View */}
+                            {activeTab === 'requests' && (
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <h2 className="text-xl font-bold text-gray-800">請求管理 (未処理)</h2>
+                                        {activeStation.type !== 'HQ' && (
+                                            <button
+                                                onClick={() => setIsRequestModalOpen(true)}
+                                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition-colors"
+                                            >
+                                                <Plus size={18} />
+                                                新規請求を作成
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="grid gap-4">
+                                        {requests.filter(r => (activeStation.type === 'HQ' ? true : r.fromStationId === activeStationId) && r.status === 'pending').map(req => {
+                                            const fromStation = stations.find(s => s.id === req.fromStationId);
+                                            return (
+                                                <div key={req.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide bg-yellow-100 text-yellow-700">承認待ち</span>
+                                                                <span className="text-xs text-gray-400">
+                                                                    {req.createdAt?.seconds ? new Date(req.createdAt.seconds * 1000).toLocaleString('ja-JP') : 'Just now'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <h3 className="font-bold text-gray-800">{fromStation?.name || '不明な署'} からの請求</h3>
+                                                                {req.requesterName && (
+                                                                    <span className="text-xs text-gray-500 flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded-full">
+                                                                        <User size={10} /> 請求担当: {req.requesterName}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            {activeStation.type === 'HQ' && req.status === 'pending' && (
+                                                                <button
+                                                                    onClick={() => handleApproveRequest(req)}
+                                                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1"
+                                                                >
+                                                                    <CheckCircle size={14} />
+                                                                    承認・出庫
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-gray-50 rounded-lg p-3">
+                                                        <ul className="text-sm space-y-2">
+                                                            {req.items.map((item, idx) => (
+                                                                <li key={idx} className="flex justify-between border-b border-gray-200 last:border-0 pb-1 last:pb-0">
+                                                                    <span className="text-gray-700">{item.name}</span>
+                                                                    <span className="font-medium text-gray-900">{item.quantity} {item.unit}</span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        {requests.filter(r => (activeStation.type === 'HQ' ? true : r.fromStationId === activeStationId) && r.status === 'pending').length === 0 && (
+                                            <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-gray-400">
+                                                現在、未処理の請求はありません
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* History Log View */}
+                            {activeTab === 'history' && (
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                    <div className="p-4 border-b flex items-center gap-2">
+                                        <History size={20} className="text-gray-500" />
+                                        <h2 className="text-lg font-bold text-gray-800">履歴ログ</h2>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left text-sm">
+                                            <thead className="bg-gray-50 text-gray-600 border-b">
+                                                <tr>
+                                                    <th className="p-4 w-40">処理日時</th>
+                                                    <th className="p-4 w-24">ステータス</th>
+                                                    <th className="p-4 w-40">署名</th>
+                                                    <th className="p-4">内容</th>
+                                                    <th className="p-4 w-40">担当者</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y">
+                                                {requests.filter(r => (activeStation.type === 'HQ' ? true : r.fromStationId === activeStationId) && (r.status === 'approved' || r.status === 'rejected')).map(req => {
+                                                    const station = stations.find(s => s.id === req.fromStationId);
+                                                    const date = req.approvedAt?.seconds 
+                                                        ? new Date(req.approvedAt.seconds * 1000).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+                                                        : '-';
+                                                    return (
+                                                        <tr key={req.id} className="hover:bg-gray-50">
+                                                            <td className="p-4 text-gray-600 font-mono text-xs whitespace-nowrap">{date}</td>
+                                                            <td className="p-4"><span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">{req.status === 'approved' ? '承認済' : req.status}</span></td>
+                                                            <td className="p-4 text-gray-800 font-medium">{station?.name}</td>
+                                                            <td className="p-4 text-gray-600">
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {req.items.map((i, idx) => (
+                                                                        <span key={idx} className="bg-gray-100 border px-2 py-0.5 rounded text-xs">{i.name} ×{i.quantity}</span>
+                                                                    ))}
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-4 text-xs text-gray-500">
+                                                                <div><span className="font-bold text-gray-700">承認:</span> {req.approverName || '-'}</div>
+                                                                <div><span className="text-gray-400">請求:</span> {req.requesterName || '-'}</div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                                {requests.filter(r => (activeStation.type === 'HQ' ? true : r.fromStationId === activeStationId) && (r.status === 'approved' || r.status === 'rejected')).length === 0 && (
+                                                    <tr><td colSpan="5" className="p-8 text-center text-gray-400">履歴はありません</td></tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Master Tab */}
+                            {activeTab === 'master' && (
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                    <div className="border-b flex overflow-x-auto">
+                                        {['consumables', 'stations', 'users', 'system'].map(mt => (
+                                            <button
+                                                key={mt}
+                                                onClick={() => setMasterTab(mt)}
+                                                className={`px-6 py-4 text-sm font-bold whitespace-nowrap ${masterTab === mt ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                            >
+                                                {mt === 'consumables' && '消耗品マスタ'}
+                                                {mt === 'stations' && '消防署マスタ'}
+                                                {mt === 'users' && '職員マスタ'}
+                                                {mt === 'system' && 'システム管理'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    
+                                    {masterTab === 'consumables' && (
+                                        <>
+                                            <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                                                <h2 className="font-bold text-gray-800">登録済み消耗品一覧</h2>
+                                                <button onClick={() => setIsItemModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm"><Plus size={16} /> 品目追加</button>
+                                            </div>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left text-sm">
+                                                    <thead className="bg-gray-50 text-gray-600 border-b">
+                                                        <tr><th className="p-4">品名</th><th className="p-4">カテゴリ</th><th className="p-4">単位</th><th className="p-4">安全在庫数</th><th className="p-4 text-center">操作</th></tr>
+                                                    </thead>
+                                                    <tbody className="divide-y">
+                                                        {consumables.map(item => (
+                                                            <tr key={item.id} className="hover:bg-gray-50">
+                                                                <td className="p-4 font-medium text-gray-800">{item.name}</td>
+                                                                <td className="p-4 text-gray-500">{item.category}</td>
+                                                                <td className="p-4 text-gray-500">{item.unit}</td>
+                                                                <td className="p-4 text-gray-500">{item.safetyStock}</td>
+                                                                <td className="p-4 text-center">
+                                                                    <button onClick={() => deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'consumables', item.id))} className="text-red-400 hover:text-red-600"><XCircle size={18} /></button>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {masterTab === 'stations' && (
+                                        <>
+                                            <div className="p-4 border-b bg-gray-50">
+                                                <div className="flex gap-2 items-end mb-4">
+                                                    <div className="flex-1">
+                                                        <label className="block text-xs font-bold text-gray-500 mb-1">新しい消防署名</label>
+                                                        <input type="text" className="w-full border rounded p-2 text-sm" placeholder="例: 第11分署" value={newStation.name} onChange={(e) => setNewStation({...newStation, name: e.target.value})} />
+                                                    </div>
+                                                    <div className="w-1/3">
+                                                        <label className="block text-xs font-bold text-gray-500 mb-1">メールアドレス</label>
+                                                        <input type="email" className="w-full border rounded p-2 text-sm" placeholder="署の代表Email" value={newStation.email} onChange={(e) => setNewStation({...newStation, email: e.target.value})} />
+                                                    </div>
+                                                    <button onClick={handleCreateStation} className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-blue-700">追加</button>
+                                                </div>
+                                            </div>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left text-sm">
+                                                    <thead className="bg-gray-50 text-gray-600 border-b">
+                                                        <tr><th className="p-4">署名</th><th className="p-4">メールアドレス</th><th className="p-4">種別</th><th className="p-4 text-center">操作</th></tr>
+                                                    </thead>
+                                                    <tbody className="divide-y">
+                                                        {stations.map(station => (
+                                                            <tr key={station.id} className="hover:bg-gray-50">
+                                                                <td className="p-4 font-medium text-gray-800">
+                                                                    {editingStationId === station.id ? (
+                                                                        <input type="text" className="border rounded p-1 w-full" value={tempStationName} onChange={(e) => setTempStationName(e.target.value)} autoFocus />
+                                                                    ) : station.name}
+                                                                </td>
+                                                                <td className="p-4 text-gray-600">
+                                                                    {editingStationId === station.id ? (
+                                                                        <input type="text" className="border rounded p-1 w-full" value={tempStationEmail} onChange={(e) => setTempStationEmail(e.target.value)} />
+                                                                    ) : (station.email ? <span className="flex items-center gap-1"><Mail size={12}/> {station.email}</span> : <span className="text-gray-300">-</span>)}
+                                                                </td>
+                                                                <td className="p-4 text-gray-500">
+                                                                    <span className={`px-2 py-1 rounded text-xs ${station.type === 'HQ' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100'}`}>{station.type === 'HQ' ? '本部' : '分署'}</span>
+                                                                </td>
+                                                                <td className="p-4 text-center">
+                                                                    {editingStationId === station.id ? (
+                                                                        <div className="flex justify-center gap-2">
+                                                                            <button onClick={() => handleUpdateStation(station.id)} className="text-green-600 hover:text-green-800"><Save size={18}/></button>
+                                                                            <button onClick={() => setEditingStationId(null)} className="text-gray-400 hover:text-gray-600"><X size={18}/></button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex justify-center gap-2">
+                                                                            <button onClick={() => { setEditingStationId(station.id); setTempStationName(station.name); setTempStationEmail(station.email || ''); }} className="text-blue-400 hover:text-blue-600"><Edit2 size={18} /></button>
+                                                                            {station.type !== 'HQ' && <button onClick={() => { if(confirm('本当に削除しますか？')) deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'stations', station.id)); }} className="text-red-400 hover:text-red-600"><XCircle size={18} /></button>}
+                                                                        </div>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {masterTab === 'users' && (
+                                        <>
+                                            <div className="p-4 border-b bg-gray-50">
+                                                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                                                    <div className="md:col-span-1"><label className="block text-xs font-bold text-gray-500 mb-1">年度</label><input type="number" className="w-full border rounded p-2 text-sm" value={newUser.year} onChange={(e) => setNewUser({...newUser, year: parseInt(e.target.value)})} /></div>
+                                                    <div className="md:col-span-1"><label className="block text-xs font-bold text-gray-500 mb-1">所属署</label><select className="w-full border rounded p-2 text-sm" value={newUser.stationId} onChange={(e) => setNewUser({...newUser, stationId: e.target.value})}>{stations.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+                                                    <div className="md:col-span-1"><label className="block text-xs font-bold text-gray-500 mb-1">職員ID (ログイン用)</label><input type="text" className="w-full border rounded p-2 text-sm" placeholder="例: 2024-C01" value={newUser.id} onChange={(e) => setNewUser({...newUser, id: e.target.value})} /></div>
+                                                    <div className="md:col-span-1"><label className="block text-xs font-bold text-gray-500 mb-1">氏名</label><input type="text" className="w-full border rounded p-2 text-sm" placeholder="例: 救急 太郎" value={newUser.name} onChange={(e) => setNewUser({...newUser, name: e.target.value})} /></div>
+                                                    <div className="md:col-span-1"><button onClick={handleCreateUser} className="w-full bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-blue-700">登録</button></div>
+                                                </div>
+                                            </div>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left text-sm">
+                                                    <thead className="bg-gray-50 text-gray-600 border-b">
+                                                        <tr><th className="p-4">年度</th><th className="p-4">ID</th><th className="p-4">所属</th><th className="p-4">氏名</th><th className="p-4 text-center">操作</th></tr>
+                                                    </thead>
+                                                    <tbody className="divide-y">
+                                                        {appUsers.map(user => {
+                                                            const userStation = stations.find(s => s.id === user.stationId);
+                                                            return (
+                                                                <tr key={user.id} className="hover:bg-gray-50">
+                                                                    <td className="p-4 text-gray-500">{user.year}</td>
+                                                                    <td className="p-4 font-mono font-bold text-blue-600">{user.id}</td>
+                                                                    <td className="p-4 text-gray-800">{userStation?.name || '不明'}</td>
+                                                                    <td className="p-4 font-medium">{user.name}</td>
+                                                                    <td className="p-4 text-center">
+                                                                        <button onClick={() => { if(confirm('本当に削除しますか？')) deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', user.id)); }} className="text-red-400 hover:text-red-600"><XCircle size={18} /></button>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {masterTab === 'system' && (
+                                        <div className="p-6">
+                                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Download size={20} /> データエクスポート (CSV)</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                <button onClick={handleExportConsumables} className="flex flex-col items-center justify-center p-6 bg-white border-2 border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all gap-3 group">
+                                                    <div className="p-3 bg-slate-100 rounded-full group-hover:bg-blue-100 text-slate-600 group-hover:text-blue-600"><Box size={24} /></div>
+                                                    <div className="text-center"><span className="block font-bold text-gray-800">消耗品マスタ</span><span className="text-xs text-gray-500">Consumables.csv</span></div>
+                                                </button>
+                                                <button onClick={handleExportInventory} className="flex flex-col items-center justify-center p-6 bg-white border-2 border-slate-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all gap-3 group">
+                                                    <div className="p-3 bg-slate-100 rounded-full group-hover:bg-green-100 text-slate-600 group-hover:text-green-600"><FileText size={24} /></div>
+                                                    <div className="text-center"><span className="block font-bold text-gray-800">全署の在庫一覧</span><span className="text-xs text-gray-500">Inventory.csv</span></div>
+                                                </button>
+                                                <button onClick={handleExportHistory} className="flex flex-col items-center justify-center p-6 bg-white border-2 border-slate-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all gap-3 group">
+                                                    <div className="p-3 bg-slate-100 rounded-full group-hover:bg-purple-100 text-slate-600 group-hover:text-purple-600"><History size={24} /></div>
+                                                    <div className="text-center"><span className="block font-bold text-gray-800">請求・承認履歴</span><span className="text-xs text-gray-500">History.csv</span></div>
+                                                </button>
+                                                <button onClick={handleExportUsers} className="flex flex-col items-center justify-center p-6 bg-white border-2 border-slate-200 rounded-xl hover:border-orange-500 hover:bg-orange-50 transition-all gap-3 group">
+                                                    <div className="p-3 bg-slate-100 rounded-full group-hover:bg-orange-100 text-slate-600 group-hover:text-orange-600"><Users size={24} /></div>
+                                                    <div className="text-center"><span className="block font-bold text-gray-800">職員マスタ</span><span className="text-xs text-gray-500">Users.csv</span></div>
+                                                </button>
+                                            </div>
+                                            <div className="mt-8 p-4 bg-yellow-50 rounded-lg text-sm text-yellow-800 border border-yellow-200 flex gap-2">
+                                                <AlertTriangle size={20} className="shrink-0" />
+                                                <div>
+                                                    <p className="font-bold">データ管理について</p>
+                                                    <p className="mt-1">システム移行時やバックアップ用として定期的にダウンロードすることをお勧めします。ダウンロードされたCSVファイルはExcel等で開くことができます。</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                        </main>
+                    </div>
+
+                    {/* Modals */}
+                    <Modal isOpen={isItemModalOpen} onClose={() => setIsItemModalOpen(false)} title="新規消耗品登録">
+                        <div className="space-y-4">
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">品名</label><input type="text" className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} placeholder="例: N95マスク" /></div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div><label className="block text-sm font-medium text-gray-700 mb-1">カテゴリ</label><select className="w-full border rounded-lg p-2" value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value})}>{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                                <div><label className="block text-sm font-medium text-gray-700 mb-1">単位</label><input type="text" className="w-full border rounded-lg p-2" value={newItem.unit} onChange={e => setNewItem({...newItem, unit: e.target.value})} placeholder="例: 箱, 枚" /></div>
+                            </div>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">安全在庫数 (アラート閾値)</label><input type="number" className="w-full border rounded-lg p-2" value={newItem.safetyStock} onChange={e => setNewItem({...newItem, safetyStock: parseInt(e.target.value) || 0})} /></div>
+                            <button onClick={handleCreateConsumable} className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 mt-2">登録する</button>
+                        </div>
+                    </Modal>
+
+                    <Modal isOpen={isRequestModalOpen} onClose={() => setIsRequestModalOpen(false)} title={`${activeStation.name} の物品請求`}>
+                        <div className="space-y-4">
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">請求担当者名 <span className="text-red-500">*</span></label><input type="text" className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none" value={requesterName} onChange={e => setRequesterName(e.target.value)} placeholder="例: 山田 太郎" /></div>
+                            <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700 mb-4">必要な物品の数量を入力してください。中央署へ請求が送信されます。</div>
+                            <div className="max-h-60 overflow-y-auto border rounded-lg divide-y">
+                                {consumables.map(item => (
+                                    <div key={item.id} className="p-3 flex justify-between items-center">
+                                        <div><p className="font-medium text-gray-800">{item.name}</p><p className="text-xs text-gray-500">現在庫: {getStock(activeStationId, item.id)} {item.unit}</p></div>
+                                        <div className="flex items-center gap-2">
+                                            <input type="number" min="0" placeholder="0" className="w-16 border rounded p-1 text-center" value={requestCart[item.id] || ''} onChange={(e) => { const val = parseInt(e.target.value); if (val > 0) { setRequestCart({...requestCart, [item.id]: val}); } else { const newCart = {...requestCart}; delete newCart[item.id]; setRequestCart(newCart); } }} />
+                                            <span className="text-sm text-gray-500 w-6">{item.unit}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex justify-between items-center pt-2 border-t mt-4">
+                                <p className="font-bold text-gray-700">合計品目数: {Object.keys(requestCart).length}</p>
+                                <button onClick={handleSubmitRequest} disabled={Object.keys(requestCart).length === 0} className={`px-6 py-2 rounded-lg font-bold text-white ${Object.keys(requestCart).length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>請求を送信</button>
+                            </div>
+                        </div>
+                    </Modal>
+                </div>
+            );
         }
-    }
 
-    function switchView(viewName, navEl) {
-        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-        document.getElementById(`view-${viewName}`).classList.add('active');
-        
-        if (navEl) {
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            navEl.classList.add('active');
-        }
-        
-        if (viewName === 'list') renderList();
-    }
-</script>
-
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
