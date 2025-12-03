@@ -157,7 +157,7 @@ e-Learning119Q  救急業務
 
     <div class="card">
       <div class="lesson-title">Lesson 10</div>
-      <div class="lesson-desc">感染防御と搬送時の留意点</div>
+      <div class="lesson-desc">アドレナリン管理票</div>
       <a href="lesson10/index.html" class="button">▶ 学習する</a>
     </div>
 
