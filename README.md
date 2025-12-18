@@ -169,7 +169,7 @@ e-Learning119Q  救急業務
 
     <div class="card">
       <div class="lesson-title">Lesson 12</div>
-      <div class="lesson-desc">精神・行動障害事案への対応</div>
+      <div class="lesson-desc">分娩介助・助産業務</div>
       <a href="lesson12/index.html" class="button">▶ 学習する</a>
     </div>
 
