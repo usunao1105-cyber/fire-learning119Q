@@ -119,6 +119,14 @@
             </IconBase>
         );
 
+        const Save = (props) => (
+            <IconBase {...props}>
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+            </IconBase>
+        );
+
         // --- Helper Functions ---
         const formatTime = (seconds) => {
             const m = Math.floor(seconds / 60);
@@ -321,75 +329,155 @@
             </div>
         );
 
-        const BabyView = ({ elapsedTime, addLog }) => (
-            <div className="p-4 space-y-4">
-                {/* Timer Bar */}
-                <div className="bg-slate-800 text-white p-4 rounded-lg shadow flex justify-between items-center">
-                <div>
-                    <p className="text-xs text-slate-300">娩出後の経過時間</p>
-                    <p className="text-3xl font-mono font-bold">{formatTime(elapsedTime)}</p>
-                </div>
-                <div className="text-right">
-                    <div className={`text-sm font-bold px-2 py-1 rounded ${elapsedTime >= 60 && elapsedTime < 300 ? 'bg-yellow-500 text-black' : elapsedTime >= 300 ? 'bg-red-500' : 'bg-slate-600'}`}>
-                    APGAR 1分: {elapsedTime >= 60 ? '評価済？' : '待機中'}
-                    </div>
-                    <div className={`text-sm font-bold px-2 py-1 rounded mt-1 ${elapsedTime >= 300 ? 'bg-yellow-500 text-black' : 'bg-slate-600'}`}>
-                    APGAR 5分: {elapsedTime >= 300 ? '評価済？' : '待機中'}
-                    </div>
-                </div>
-                </div>
+        const ApgarScorer = ({ type, data, onChange, onSave }) => {
+            const items = [
+                { id: 'skin', label: '皮膚色 (A)', options: [{ val: 0, text: '青白' }, { val: 1, text: '手足青' }, { val: 2, text: '全身桃' }] },
+                { id: 'pulse', label: '心拍数 (P)', options: [{ val: 0, text: 'なし' }, { val: 1, text: '<100' }, { val: 2, text: '>100' }] },
+                { id: 'grimace', label: '刺激反応 (G)', options: [{ val: 0, text: 'なし' }, { val: 1, text: '顔しかめ' }, { val: 2, text: '啼泣' }] },
+                { id: 'activity', label: '筋緊張 (A)', options: [{ val: 0, text: 'だらり' }, { val: 1, text: 'やや屈曲' }, { val: 2, text: '活発' }] },
+                { id: 'respiration', label: '呼吸 (R)', options: [{ val: 0, text: 'なし' }, { val: 1, text: '遅・不整' }, { val: 2, text: '強い啼泣' }] },
+            ];
 
-                {/* Resuscitation Check */}
-                <div className="bg-white p-4 rounded shadow border-l-4 border-blue-500">
-                <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-                    <Activity size={20} className="text-blue-600"/> 初期処置 (NCPR)
-                </h3>
+            const totalScore = Object.values(data).reduce((sum, val) => sum + (val || 0), 0);
+            const isComplete = Object.values(data).every(v => v !== null);
+
+            return (
                 <div className="space-y-3">
-                    <div className="flex gap-2">
-                    <button onClick={() => addLog('児：乾燥・刺激')} className="flex-1 bg-blue-50 py-3 rounded border border-blue-200 font-bold text-blue-800 active:bg-blue-100">
-                        乾燥・刺激
-                    </button>
-                    <button onClick={() => addLog('児：吸引実施')} className="flex-1 bg-blue-50 py-3 rounded border border-blue-200 font-bold text-blue-800 active:bg-blue-100">
-                        気道吸引
-                    </button>
+                    <div className="bg-slate-50 p-2 rounded border border-slate-200">
+                        {items.map((item) => (
+                            <div key={item.id} className="mb-2 last:mb-0">
+                                <div className="text-xs font-bold text-slate-600 mb-1">{item.label}</div>
+                                <div className="flex gap-1">
+                                    {item.options.map((opt) => (
+                                        <button
+                                            key={opt.val}
+                                            onClick={() => onChange(type, item.id, opt.val)}
+                                            className={`flex-1 py-2 text-xs rounded border transition-colors
+                                                ${data[item.id] === opt.val 
+                                                    ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-sm' 
+                                                    : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}
+                                        >
+                                            <span className="block text-lg font-bold">{opt.val}</span>
+                                            <span className="text-[10px]">{opt.text}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                     
-                    <div className="bg-red-50 p-3 rounded">
-                    <p className="font-bold text-red-700 mb-2">呼吸・心拍チェック</p>
-                    <div className="grid grid-cols-2 gap-2">
-                        <button onClick={() => addLog('児：啼泣あり・良好')} className="bg-green-500 text-white p-2 rounded font-bold shadow">
-                        泣いている (良)
-                        </button>
-                        <button onClick={() => addLog('児：呼吸弱い/なし')} className="bg-red-500 text-white p-2 rounded font-bold shadow animate-pulse">
-                        呼吸なし/弱い
+                    <div className="flex items-center justify-between bg-slate-100 p-3 rounded">
+                        <div>
+                            <span className="text-sm font-bold text-slate-600">合計点:</span>
+                            <span className={`ml-2 text-2xl font-bold ${totalScore <= 3 ? 'text-red-600' : totalScore <= 6 ? 'text-yellow-600' : 'text-green-600'}`}>
+                                {totalScore}点
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => onSave(type, totalScore)}
+                            className={`flex items-center gap-1 px-4 py-2 rounded font-bold shadow-sm transition-transform active:scale-95
+                                ${isComplete ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-300 text-slate-500'}`}
+                        >
+                            <Save size={16} /> 記録
                         </button>
                     </div>
-                    </div>
                 </div>
-                </div>
+            );
+        };
 
-                <div className="bg-white p-4 rounded shadow">
-                <h3 className="font-bold text-slate-700 mb-2">APGARスコア項目</h3>
-                <table className="w-full text-xs sm:text-sm">
-                    <thead>
-                    <tr className="bg-slate-100">
-                        <th className="p-1">項目</th>
-                        <th className="p-1">0点</th>
-                        <th className="p-1">1点</th>
-                        <th className="p-1">2点</th>
-                    </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                    <tr><td>皮膚色</td><td>青白</td><td>手足青</td><td>全身桃</td></tr>
-                    <tr><td>心拍数</td><td>なし</td><td>&lt;100</td><td>&gt;100</td></tr>
-                    <tr><td>刺激反応</td><td>なし</td><td>顔しかめ</td><td>啼泣</td></tr>
-                    <tr><td>筋緊張</td><td>だらり</td><td>やや屈曲</td><td>活発</td></tr>
-                    <tr><td>呼吸</td><td>なし</td><td>遅・不整</td><td>強い啼泣</td></tr>
-                    </tbody>
-                </table>
+        const BabyView = ({ elapsedTime, addLog, apgarData, setApgarData }) => {
+            const [apgarTab, setApgarTab] = useState('1'); // '1' or '5'
+
+            const handleApgarChange = (type, field, value) => {
+                setApgarData(prev => ({
+                    ...prev,
+                    [type]: { ...prev[type], [field]: value }
+                }));
+            };
+
+            const handleApgarSave = (type, score) => {
+                const d = apgarData[type];
+                // 詳細なログを作成
+                const details = `(P${d.skin ?? '-'}, P${d.pulse ?? '-'}, G${d.grimace ?? '-'}, A${d.activity ?? '-'}, R${d.respiration ?? '-'})`;
+                addLog(`APGAR(${type}分値): ${score}点 ${details}`);
+            };
+
+            return (
+                <div className="p-4 space-y-4">
+                    {/* Timer Bar */}
+                    <div className="bg-slate-800 text-white p-4 rounded-lg shadow flex justify-between items-center">
+                    <div>
+                        <p className="text-xs text-slate-300">娩出後の経過時間</p>
+                        <p className="text-3xl font-mono font-bold">{formatTime(elapsedTime)}</p>
+                    </div>
+                    <div className="text-right">
+                        <div className={`text-sm font-bold px-2 py-1 rounded ${elapsedTime >= 60 && elapsedTime < 300 ? 'bg-yellow-500 text-black' : elapsedTime >= 300 ? 'bg-red-500' : 'bg-slate-600'}`}>
+                        APGAR 1分: {elapsedTime >= 60 ? '評価' : '待機'}
+                        </div>
+                        <div className={`text-sm font-bold px-2 py-1 rounded mt-1 ${elapsedTime >= 300 ? 'bg-yellow-500 text-black' : 'bg-slate-600'}`}>
+                        APGAR 5分: {elapsedTime >= 300 ? '評価' : '待機'}
+                        </div>
+                    </div>
+                    </div>
+
+                    {/* Resuscitation Check */}
+                    <div className="bg-white p-4 rounded shadow border-l-4 border-blue-500">
+                    <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
+                        <Activity size={20} className="text-blue-600"/> 初期処置 (NCPR)
+                    </h3>
+                    <div className="space-y-3">
+                        <div className="flex gap-2">
+                        <button onClick={() => addLog('児：乾燥・刺激')} className="flex-1 bg-blue-50 py-3 rounded border border-blue-200 font-bold text-blue-800 active:bg-blue-100">
+                            乾燥・刺激
+                        </button>
+                        <button onClick={() => addLog('児：吸引実施')} className="flex-1 bg-blue-50 py-3 rounded border border-blue-200 font-bold text-blue-800 active:bg-blue-100">
+                            気道吸引
+                        </button>
+                        </div>
+                        
+                        <div className="bg-red-50 p-3 rounded">
+                        <p className="font-bold text-red-700 mb-2">呼吸・心拍チェック</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button onClick={() => addLog('児：啼泣あり・良好')} className="bg-green-500 text-white p-2 rounded font-bold shadow">
+                            泣いている (良)
+                            </button>
+                            <button onClick={() => addLog('児：呼吸弱い/なし')} className="bg-red-500 text-white p-2 rounded font-bold shadow animate-pulse">
+                            呼吸なし/弱い
+                            </button>
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+
+                    <div className="bg-white p-4 rounded shadow">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="font-bold text-slate-700">APGARスコア採点</h3>
+                            <div className="flex bg-slate-100 rounded p-1">
+                                <button 
+                                    onClick={() => setApgarTab('1')}
+                                    className={`px-3 py-1 text-xs font-bold rounded ${apgarTab === '1' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}
+                                >
+                                    1分値
+                                </button>
+                                <button 
+                                    onClick={() => setApgarTab('5')}
+                                    className={`px-3 py-1 text-xs font-bold rounded ${apgarTab === '5' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}
+                                >
+                                    5分値
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <ApgarScorer 
+                            type={apgarTab} 
+                            data={apgarData[apgarTab]} 
+                            onChange={handleApgarChange}
+                            onSave={handleApgarSave}
+                        />
+                    </div>
                 </div>
-            </div>
-        );
+            );
+        };
 
         const MotherView = ({ addLog }) => (
             <div className="p-4 space-y-4">
@@ -449,6 +537,13 @@
             const [logs, setLogs] = useState([]);
             const [checkedItems, setCheckedItems] = useState({});
             const [showResetConfirm, setShowResetConfirm] = useState(false);
+            
+            // APGAR State: 1分値と5分値をそれぞれ保持
+            const initialApgarState = { 
+                '1': { skin: null, pulse: null, grimace: null, activity: null, respiration: null },
+                '5': { skin: null, pulse: null, grimace: null, activity: null, respiration: null }
+            };
+            const [apgarData, setApgarData] = useState(initialApgarState);
 
             // Timer for current time
             useEffect(() => {
@@ -504,6 +599,7 @@
                 setElapsedTime(0);
                 setLogs([]);
                 setCheckedItems({});
+                setApgarData(initialApgarState); // Reset Apgar
                 setShowResetConfirm(false);
             };
 
@@ -539,6 +635,8 @@
                     <BabyView 
                         elapsedTime={elapsedTime} 
                         addLog={addLog} 
+                        apgarData={apgarData}
+                        setApgarData={setApgarData}
                     />
                     )}
                     {activeTab === 'mother' && (
