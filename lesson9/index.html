@@ -11,7 +11,7 @@
     <!-- Babel (for JSX) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Import Maps: ライブラリの読み込み先を定義 -->
+    <!-- Import Maps -->
     <script type="importmap">
     {
         "imports": {
@@ -63,15 +63,14 @@
         //  設定エリア (ここにFirebase設定を貼る)
         // ==========================================
         const firebaseConfig = {
-           apiKey: "AIzaSyC5Ml5bnTzQkDVCexSpeG1vGM2J_6lKZXc",
-  authDomain: "ems-inventory-11404.firebaseapp.com",
-  projectId: "ems-inventory-11404",
-  storageBucket: "ems-inventory-11404.firebasestorage.app",
-  messagingSenderId: "889986261442",
-  appId: "1:889986261442:web:f63b5b75861c552361f65b"
+        apiKey: "AIzaSyC5Ml5bnTzQkDVCexSpeG1vGM2J_6lKZXc",
+        authDomain: "ems-inventory-11404.firebaseapp.com",
+        projectId: "ems-inventory-11404",
+        storageBucket: "ems-inventory-11404.firebasestorage.app",
+        messagingSenderId: "889986261442",
+        appId: "1:889986261442:web:f63b5b75861c552361f65b"
         };
         
-        // データ共有用のアプリID (任意の文字列でOK)
         const APP_ID = 'ems-inventory-manager-v1';
         
         // ==========================================
@@ -79,11 +78,9 @@
         // ==========================================
 
         // Initialize Firebase
-        // 設定がない場合のダミー初期化（エラー回避用）
-        // projectId がないとエラーになるため、ダミー値にも含める
         const app = Object.keys(firebaseConfig).length > 0 
             ? initializeApp(firebaseConfig) 
-            : initializeApp({apiKey: "demo", authDomain: "demo", projectId: "demo-project"}); 
+            : initializeApp({apiKey: "demo", authDomain: "demo", projectId: "demo"});
             
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -98,7 +95,7 @@
             { id: 'station_5', name: '第5分署', type: 'Branch', email: '' },
         ];
 
-        // Default admin user for initialization
+        // Default admin user
         const DEFAULT_USER = {
             id: 'admin',
             name: 'システム管理者',
@@ -175,7 +172,6 @@
 
             // --- Authentication & Initialization ---
             useEffect(() => {
-                // コンフィグが空の場合は処理を中断（UI側で警告を表示する）
                 if (Object.keys(firebaseConfig).length === 0) {
                     console.warn("Firebase Config is missing.");
                     setLoading(false);
@@ -240,10 +236,12 @@
 
                 // Fetch Users and seed default admin if empty
                 const unsubUsers = onSnapshot(usersRef, (snapshot) => {
+                    const users = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    setAppUsers(users);
+                    
+                    // If empty, try seeding again
                     if (snapshot.empty && !snapshot.metadata.hasPendingWrites) {
                         setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', DEFAULT_USER.id), DEFAULT_USER);
-                    } else {
-                        setAppUsers(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
                     }
                 });
 
@@ -256,12 +254,22 @@
                 };
             }, [firebaseUser]);
 
-            // --- Login Logic ---
+            // --- Login Logic (修正版) ---
             const handleLogin = (e) => {
                 e.preventDefault();
                 setLoginError('');
                 
-                const userProfile = appUsers.find(u => u.id === loginIdInput.trim());
+                const inputId = loginIdInput.trim();
+                
+                // 1. データベースからユーザーを探す
+                let userProfile = appUsers.find(u => u.id === inputId);
+                
+                // 2. 緊急用バックドア: IDが 'admin' なら、DBになくても強制ログイン許可
+                // これにより、DB接続トラブル時や初期データ作成失敗時でもログイン可能
+                if (!userProfile && inputId === 'admin') {
+                    userProfile = DEFAULT_USER;
+                    console.log("Admin Emergency Login Activated");
+                }
                 
                 if (userProfile) {
                     setCurrentUserProfile(userProfile);
@@ -596,7 +604,7 @@
                             </div>
                             <div className="leading-tight">
                                 <h1 className="font-bold text-lg">EMS Inventory</h1>
-                                <p className="text-xs text-slate-400">Ver 2.1.0</p>
+                                <p className="text-xs text-slate-400">Ver 2.1.1 (Patch)</p>
                             </div>
                             <button onClick={() => setIsSidebarOpen(false)} className="md:hidden ml-auto">
                                 <X size={20} />
