@@ -175,7 +175,7 @@ e-Learning119Q  救急業務
 
     <div class="card">
       <div class="lesson-title">Lesson 13</div>
-      <div class="lesson-desc">医療機関との連携</div>
+      <div class="lesson-desc">国際緊急援助隊</div>
       <a href="lesson13/index.html" class="button">▶ 学習する</a>
     </div>
 
