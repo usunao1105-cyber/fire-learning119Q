@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>国際緊急援助隊 (JDR) 学習・訓練アプリ</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel (for JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom Config for Tailwind to add refined colors/fonts if needed -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        jdr: {
+                            base: '#2e1065',    /* violet-950 */
+                            primary: '#4c1d95', /* violet-900 */
+                            accent: '#7c3aed',  /* violet-600 */
+                            light: '#f5f3ff',   /* violet-50 */
+                            gold: '#d97706',    /* amber-600 */
+                            goldDark: '#b45309' /* amber-700 */
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Helvetica Neue"', 'Arial', '"Hiragino Kaku Gothic ProN"', '"Hiragino Sans"', 'Meiryo', 'sans-serif'],
+                        serif: ['"Hiragino Mincho ProN"', '"Yu Mincho"', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #f8fafc;
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- ICONS (Inline SVG components to avoid dependencies) ---
+        const Icon = ({ path, className }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="24" height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+            >
+                {path}
+            </svg>
+        );
+
+        const Icons = {
+            Globe: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></>} />,
+            Book: (props) => <Icon {...props} path={<><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></>} />,
+            Shield: (props) => <Icon {...props} path={<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></>} />,
+            Search: (props) => <Icon {...props} path={<><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></>} />,
+            ArrowLeft: (props) => <Icon {...props} path={<><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></>} />,
+            ChevronDown: (props) => <Icon {...props} path={<path d="m6 9 6 6 6-6"/>} />,
+            ChevronUp: (props) => <Icon {...props} path={<path d="m18 15-6-6-6 6"/>} />,
+            Award: (props) => <Icon {...props} path={<><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></>} />,
+            Play: (props) => <Icon {...props} path={<polygon points="5 3 19 12 5 21 5 3"/>} />,
+            RefreshCw: (props) => <Icon {...props} path={<><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></>} />,
+            CheckCircle: (props) => <Icon {...props} path={<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>} />,
+            XCircle: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></>} />,
+        };
+
+        // --- DATA: JDR FAQ 50 ---
+        const faqData = [
+            // 第1章：基礎・概要
+            { id: 1, chapter: "第1章：基礎・概要", question: "国際緊急援助隊（JDR）とは何ですか？", answer: "国際緊急援助隊（Japan Disaster Relief Team: JDR）は、海外（特に開発途上地域）で大規模な災害が発生した際、被災国政府や国際機関の要請に基づいて日本政府が派遣する救援チームの総称です。その目的は、被災者の救助、医療活動、災害応急対策、復旧活動などを行い、国際協力の推進に寄与することです。活動は「救助チーム」「医療チーム」「専門家チーム」「自衛隊部隊」「感染症対策チーム」の5つの形態があり、災害の規模や種類に応じて単独または組み合わせて派遣されます。" },
+            { id: 2, chapter: "第1章：基礎・概要", question: "日本が行う国際緊急援助にはどのような種類がありますか？", answer: "日本の国際緊急援助は大きく分けて3つの柱があります。\n\n1. 人的援助: 国際緊急援助隊（JDR）の派遣。専門家や部隊を現地に送り込みます。\n2. 物的援助: テント、毛布、浄水器などの緊急援助物資の供与。JICAが世界各地の倉庫に備蓄している物資を被災地に届けます。\n3. 資金援助: 緊急無償資金協力。被災国政府や国際機関に対して、復興や人道支援のために必要な資金を提供します。" },
+            { id: 3, chapter: "第1章：基礎・概要", question: "JDRの派遣はどのように決定されるのですか？", answer: "まず、被災国の政府または国際機関から日本政府に対して援助要請があることが前提となります。要請を受けると、外務省が情報の収集を行い、災害の規模やニーズ、日本の対応能力を勘案して派遣の必要性を検討します。派遣が妥当と判断された場合、外務大臣は関係行政機関（警察庁、消防庁、海上保安庁、防衛省など）と協議を行い、JICAに対して派遣命令を出します。これを受けてJICAがチームの編成や輸送手配を行い、派遣が実施されます。" },
+            { id: 4, chapter: "第1章：基礎・概要", question: "なぜ日本は国際緊急援助を行うのですか？", answer: "日本は地震や台風などの自然災害が多発する国であり、これまでに蓄積してきた豊富な防災経験と技術的ノウハウを有しています。こうした日本の強みを活かして世界の被災地を支援することは、国際社会の平和と安定に寄与するだけでなく、相互依存関係にある世界において日本の責務でもあります。また、被災地での直接的な支援活動は「顔の見える援助」として、日本と被災国との信頼関係構築や外交上の効果も大きいとされています。" },
+            { id: 5, chapter: "第1章：基礎・概要", question: "災害にはどのような種類があり、JDRはどれに対応しますか？", answer: "災害は「自然災害（地震、津波、洪水、感染症など）」「人為的災害（ビル倒壊、ガス爆発、環境汚染など）」「紛争（難民流出など）」に大別されます。JDR法に基づく国際緊急援助隊は、主に「自然災害」および「紛争に起因しない人為的災害」に対応します。紛争に起因する災害（難民救援など）については、PKO法（国際平和協力法）に基づく活動として区別して対応することになっています。" },
+
+            // 第2章：歴史・変遷
+            { id: 6, chapter: "第2章：歴史・変遷", question: "JDRが発足したきっかけは何ですか？", answer: "1970年代後半のカンボジア難民危機が大きなきっかけとなりました。当時、欧米諸国が迅速に医療チームなどを派遣したのに対し、日本は資金援助は行ったものの人的貢献ができず、「金は出すが人は出さない（チェックブック・ディプロマシー）」という国際的な批判を浴びました。この反省から、1982年に国際緊急医療チーム（JMTDR）が発足し、その後1987年のJDR法制定へとつながりました。" },
+            { id: 7, chapter: "第2章：歴史・変遷", question: "「国際緊急援助隊の派遣に関する法律（JDR法）」はいつ制定されましたか？", answer: "1987年（昭和62年）8月に成立し、同年9月16日に施行されました。それまでの医療チーム（JMTDR）だけの体制では、メキシコ地震（1985年）などの経験から、捜索・救助や専門家による助言など総合的な支援には不十分であることが認識されたためです。この法律により、救助チーム、医療チーム、専門家チームの3体制が法的に確立されました。" },
+            { id: 8, chapter: "第2章：歴史・変遷", question: "1992年の法改正で何が変わりましたか？", answer: "1992年の法改正により、自衛隊の部隊による国際緊急援助活動が可能になりました。それまでの活動経験から、大規模災害時には自己完結能力（衣食住を自分たちで賄う能力）や大量輸送能力が不可欠であることが痛感されたためです。これにより、外務大臣が特に必要と認める場合に、防衛大臣と協議して自衛隊を派遣できる仕組みが整いました。" },
+            { id: 9, chapter: "第2章：歴史・変遷", question: "国際緊急医療チーム（JMTDR）とは何ですか？", answer: "JMTDR（Japan Medical Team for Disaster Relief）は、現在の国際緊急援助隊・医療チームの前身となる組織です。1982年に発足し、医師や看護師を事前登録しておき、災害発生時に迅速に派遣するシステムでした。JDR法成立後も、医療チームの登録制度や活動の精神は現在のJDR医療チームに引き継がれています。" },
+            { id: 10, chapter: "第2章：歴史・変遷", question: "感染症対策チームはいつ、なぜ設立されましたか？", answer: "2014年に西アフリカでエボラ出血熱が大流行した際、従来の医療チームの枠組みだけでは、専門的な防疫や感染封じ込めに十分対応できないという課題が浮き彫りになりました。この教訓を踏まえ、2015年10月に、感染症対策に特化した「感染症対策チーム」が新設されました。これにより、自然災害だけでなく、国際的な公衆衛生の危機に対しても効果的な支援が可能となりました。" },
+
+            // 第3章：チーム構成と機能
+            { id: 11, chapter: "第3章：チーム構成と機能", question: "「救助チーム」の役割と構成員は？", answer: "救助チームの主な任務は、地震で倒壊した建物などから被災者を捜索・救出・搬送することです。隊員は、外務省、警察庁（警察官）、消防庁（消防吏員）、海上保安庁（海上保安官）の職員、およびJICAの調整員、医療班、構造評価専門家などで構成されます。高度な救助技術を持つプロフェッショナル集団であり、政府の派遣決定から24時間以内に出発できる態勢を整えています。" },
+            { id: 12, chapter: "第3章：チーム構成と機能", question: "「医療チーム」の役割と構成員は？", answer: "医療チームは、被災地で診療所を開設し、被災者の応急診療や疾病の感染予防活動を行います。構成員は、JICAに事前登録している民間の医師、看護師、薬剤師、医療調整員の中から選抜されるボランティアに加え、外務省やJICA職員が参加します。自己完結型の「Type 2（野外病院機能）」などの構成を持ち、現地の医療施設の能力を補完します。" },
+            { id: 13, chapter: "第3章：チーム構成と機能", question: "「専門家チーム」とはどのようなチームですか？", answer: "専門家チームは、災害の拡大防止や復旧活動に関して、被災国政府へ専門的な助言や指導を行います。例えば、火山の噴火予測、建物の耐震診断、油流出事故への防除対策、感染症対策のアドバイスなど多岐にわたります。構成員は、災害の種類に応じて関係省庁、自治体、民間企業の研究者や技術者が選ばれます。" },
+            { id: 14, chapter: "第3章：チーム構成と機能", question: "「自衛隊部隊」はどのような活動をしますか？", answer: "自衛隊部隊は、特に大規模な災害で、文民のチームだけでは対応が困難な場合に派遣されます。主な活動内容は、輸送機や輸送艦を用いた大量の人員・物資の輸送、防疫活動、医療活動、給水活動などです。自己完結能力が高いため、インフラが壊滅した被災地でも長期間活動できるのが特徴です。" },
+            { id: 15, chapter: "第3章：チーム構成と機能", question: "「感染症対策チーム」の具体的な機能は？", answer: "感染症対策チームは、「疫学（調査・予測）」「検査診断（病原体の特定）」「診療・感染制御（患者治療・院内感染防止）」「公衆衛生対応（地域啓発・予防）」の4つの専門機能と、活動を支える「ロジスティック」の計5つの機能を持っています。これにより、感染症の流行拡大を阻止するための包括的な支援を行います。" },
+            { id: 16, chapter: "第3章：チーム構成と機能", question: "JDRの事務局機能はどこが担っていますか？", answer: "独立行政法人国際協力機構（JICA）の中に設置されている「国際緊急援助隊事務局」が担っています。JDR法第7条に基づき、隊員の登録管理、研修・訓練の実施、資機材の備蓄・調達、派遣時の輸送手配やロジスティクス全般を担当しています。" },
+
+            // 第4章：国際基準と能力評価
+            { id: 17, chapter: "第4章：国際基準と能力評価", question: "INSARAGとは何ですか？", answer: "INSARAG（国際捜索・救助諮問グループ）は、国連人道問題調整事務所（OCHA）を事務局とする、各国の救助チーム間の調整や標準化を行うネットワークです。1988年のアルメニア地震で各国の救助チームが殺到して混乱した教訓から1991年に設立されました。国際的な救助活動のルール作りや能力評価を行っています。" },
+            { id: 18, chapter: "第4章：国際基準と能力評価", question: "日本の救助チームが取得している「Heavy」認証とは？", answer: "日本の救助チームは、INSARAGによる能力評価（IEC）において、最高レベルの「Heavy（ヘビー）」の認定を受けています。これは、被災地で独自に安全を確保し、2つの災害現場で同時に、24時間体制で10日間連続して高度な捜索救助活動（コンクリートの破壊などを含む）を継続できる能力があることを国際的に証明するものです。日本は2010年にこれを取得し、その後も更新しています。" },
+            { id: 19, chapter: "第4章：国際基準と能力評価", question: "医療チームの「EMT」とは何ですか？", answer: "EMT（Emergency Medical Team）は、WHO（世界保健機関）が推進する緊急医療チームの国際的な分類基準です。日本のJDR医療チームは、このイニシアチブにおいて、手術機能や入院機能を持つ野外病院を展開できるレベルなどの基準を満たしており、国際的に標準化された質の高い医療支援を提供できる体制を整えています。" },
+
+            // 第5章：国際調整と民軍連携
+            { id: 20, chapter: "第5章：国際調整と民軍連携", question: "被災地での国際調整は誰が行いますか？", answer: "国連人道問題調整事務所（OCHA）が中心となって行います。大規模災害時には、OCHAから「UNDAC（国連災害評価調整チーム）」が派遣され、被災国政府の支援や、現地に到着する各国の援助隊の調整を行います。また、現地の調整拠点として「OSOCC（現地活動調整センター）」を設置し、情報の集約や活動場所の割り振りを行います。" },
+            { id: 21, chapter: "第5章：国際調整と民軍連携", question: "OSOCC（現地活動調整センター）の役割は？", answer: "OSOCC（On-Site Operations Coordination Center）は、被災地において各国の救助チームや国際機関、NGOなどの活動を調整する現場本部です。到着したチームの登録受付、被災状況の共有、どのチームがどのエリアを担当するかといった活動調整を行い、支援の重複や空白を防ぐ役割を果たします。" },
+            { id: 22, chapter: "第5章：国際調整と民軍連携", question: "民軍調整（UN-CMCoord）とは何ですか？", answer: "人道支援の現場において、文民組織（国連、NGOなど）と軍事組織（各国の軍隊）が、競合を避け、効率的に活動するために行う対話や調整のことです。人道支援は原則として文民が行うものですが、大規模災害などで軍の能力（輸送力など）が必要な場合、「人道原則」を守りつつ、軍が文民の活動を補完する形で協力するための枠組みです。" },
+            { id: 23, chapter: "第5章：国際調整と民軍連携", question: "「オスロ・ガイドライン」とは何ですか？", answer: "自然災害救援における外国軍の資産（MCDA）の活用に関する国際的なガイドラインです。軍の資産は、文民の能力では対応できない場合の「最終手段（Last Resort）」として利用されるべきであること、被災国の要請に基づくこと、人道原則を遵守することなどが規定されています。" },
+            { id: 24, chapter: "第5章：国際調整と民軍連携", question: "アジア太平洋地域独自のガイドライン（APC-MADRO）とは？", answer: "アジア太平洋地域では軍が災害対応の主力となることが多いため、オスロ・ガイドラインを補完するものとして作成されたガイドラインです。軍による直接支援の可能性を認めつつも、人道支援コミュニティとの緊密な連携や、被災国の主権尊重、人道原則の遵守を求めています。" },
+            { id: 25, chapter: "第5章：国際調整と民軍連携", question: "MNCC（多国間調整所）とは何ですか？", answer: "被災国軍が設置する、支援に来た各国軍隊の活動を調整するためのセンターです。被災国軍の司令部などに設置され、各国軍の能力に応じて輸送任務や活動地域の割り当てを行います。人道支援側のOSOCCと連携することで、民軍全体の調整を図ります。" },
+            { id: 26, chapter: "第5章：国際調整と民軍連携", question: "HuMOCC（人道支援軍事作戦調整センター）とは？", answer: "被災国が設置する、民（人道支援組織）と軍の調整に特化した機関です。OSOCCからの軍事資産利用要請（輸送依頼など）を精査し、MNCCへつなぐ役割を果たします。2015年のネパール地震などで機能し、民軍調整の中核的なモデルとなっています。" },
+
+            // 第6章：自衛隊の活動詳細
+            { id: 27, chapter: "第6章：自衛隊の活動詳細", question: "自衛隊が国際緊急援助活動に参加する条件は？", answer: "JDR法に基づき、外務大臣が「特に必要があると認める場合」に、防衛大臣と協議して派遣されます。具体的には、災害の規模が大きく、自己完結性や大量輸送能力が必要とされ、文民のチームだけでは十分な対応が困難な場合などが該当します。" },
+            { id: 28, chapter: "第6章：自衛隊の活動詳細", question: "自衛隊の派遣部隊は武器を携行しますか？", answer: "国際緊急援助活動においては、原則として現地の治安が維持されていることが前提となるため、隊員の防護のために武器が必要と認められる場合を除き、武器は携行しません。過去のフィリピン台風支援などでも、治安維持ではなく人道支援が目的であるため、武器は携行していません。" },
+            { id: 29, chapter: "第6章：自衛隊の活動詳細", question: "自衛隊はどのような準備態勢をとっていますか？", answer: "陸上・海上・航空自衛隊は、常時待機態勢をとっています。例えば、航空自衛隊の輸送機（C-130H）は派遣命令から48時間以内に出発できるよう準備しています。また、陸上自衛隊は医療・輸送・給水などの機能を持つ部隊を、海上自衛隊は輸送艦などを迅速に派遣できる態勢を維持しています。" },
+            { id: 30, chapter: "第6章：自衛隊の活動詳細", question: "PKO法に基づく活動とJDR法に基づく自衛隊派遣の違いは？", answer: "PKO法は「紛争」に起因する難民救援や平和維持活動を目的としており、停戦合意などの厳格な参加5原則があります。一方、JDR法に基づく派遣は「自然災害」や「紛争に起因しない人為的災害」を対象としており、被災国の要請に基づいて人道的な救助・復旧支援を行う点が異なります。" },
+
+            // 第7章：事例紹介
+            { id: 31, chapter: "第7章：事例紹介", question: "2013年フィリピン台風（ヨランダ）への日本の対応は？", answer: "甚大な被害に対し、日本は過去最大規模の支援を行いました。JICAは医療チーム（3次隊まで）と専門家チームを派遣しました。自衛隊は過去最大の約1,180名からなる統合任務部隊を派遣し、輸送艦や航空機を用いて救援物資の輸送、防疫活動、医療活動を行いました。" },
+            { id: 32, chapter: "第7章：事例紹介", question: "フィリピン台風での調整の課題は何でしたか？", answer: "各国軍や国際機関が入り乱れる中、民軍調整が複雑でした。OSOCC（人道側）とMNCC（軍事側）の調整が必ずしもスムーズではなく、自衛隊の医療活動の場所決定などにおいて、日本大使館が現地政府との橋渡し役として重要な役割を果たしました。この経験から、現場での情報共有や調整メカニズムの重要性が再認識されました。" },
+            { id: 33, chapter: "第7章：事例紹介", question: "2015年ネパール地震での活動の特徴は？", answer: "救助チーム、医療チーム、自衛隊部隊が派遣されました。特に医療チームは、MRIやCTなどの高度な画像診断機器を持ち込み、現地の病院を補完する高度な医療を提供しました。また、自衛隊も医療援助隊を派遣し、手術などを行いました。HuMOCCなどの調整の仕組みも活用されました。" },
+            { id: 34, chapter: "第7章：事例紹介", question: "2014年エボラ出血熱への対応はどうでしたか？", answer: "西アフリカでの流行に対し、日本は専門家チームを派遣し、感染拡大防止の助言を行いました。また、自衛隊の空中給油輸送機が防護服などの物資をガーナまで輸送しました。この経験が、後の「感染症対策チーム」の創設につながりました。" },
+            { id: 35, chapter: "第7章：事例紹介", question: "東日本大震災の際、日本は海外から支援を受けましたか？", answer: "はい。126の国・地域、国際機関から支援の申し出があり、24の国・地域から緊急援助隊が派遣されました。日本が国際緊急援助を受ける側となったことで、受援（支援の受け入れ）時の調整の難しさや、国際的な連帯の重要性を改めて認識する機会となりました。" },
+
+            // 第8章：課題と展望
+            { id: 36, chapter: "第8章：課題と展望", question: "「受援力」とは何ですか？", answer: "災害時に海外からの支援を円滑に受け入れる能力のことです。東日本大震災では、海外チームとの調整やマッチングに課題が残りました。これを受けて、日本国内の防災計画において、海外からの支援をどう受け入れ、調整するかという「受援」の体制整備が進められています。" },
+            { id: 37, chapter: "第8章：課題と展望", question: "派遣のスピードに関する課題はありますか？", answer: "人命救助の目安である「72時間の壁」に対応するため、一刻も早い派遣が求められます。しかし、被災国政府の混乱により要請が遅れる場合があります。これに対し、要請前の段階から調査チームを派遣したり、近隣国へ部隊を事前展開させるなど、運用面での改善が進められています。" },
+            { id: 38, chapter: "第8章：課題と展望", question: "「Build Back Better（より良い復興）」とは？", answer: "災害発生前の状態に戻すだけでなく、災害により強い社会を構築するという考え方です。日本のJDRは、単なる緊急支援にとどまらず、その後の復旧・復興段階において、日本の防災技術を活かした「災害に強い国づくり」を支援すること（シームレスな移行）を重視しています。" },
+            { id: 39, chapter: "第8章：課題と展望", question: "JDR活動における「Do No Harm」とは？", answer: "「害を与えない」という人道支援の基本原則です。支援活動が地域の文化や経済、環境に悪影響を与えたり、依存を生んだりしないように配慮することです。特に軍事組織が関与する場合、中立性や独立性を損なわないよう注意が必要です。" },
+            { id: 40, chapter: "第8章：課題と展望", question: "JDRに参加するにはどうすればよいですか？", answer: "医療チームに参加するには、医師、看護師、薬剤師などの資格を持ち、JICAの「国際緊急援助隊医療チーム」に事前登録する必要があります。登録後、研修を受けて待機します。救助チームは警察・消防・海保の職員から選抜されるため、一般募集はありません。一般の方は、JICAのボランティアやNGOを通じた支援が可能です。" },
+            { id: 41, chapter: "第8章：課題と展望", question: "緊急援助物資はどこに備蓄されていますか？", answer: "迅速な提供のため、世界4カ所（シンガポール、マイアミ、アクラ（ガーナ）、ドバイ）に加え、パラオ、マーシャル諸島の計6カ所の倉庫に備蓄されています。テント、毛布、ポリタンク、浄水器などが主な品目です。" },
+            { id: 42, chapter: "第8章：課題と展望", question: "VOSOCCとは何ですか？", answer: "「Virtual OSOCC」の略で、OCHAが運営する災害情報のウェブ掲示板です。災害発生直後から、各国の担当者が被害情報や派遣計画を書き込み、リアルタイムで情報を共有します。日本も派遣決定時にはここに情報を登録し、国際社会に発信します。" },
+            { id: 43, chapter: "第8章：課題と展望", question: "日本の救助チームの強みは何ですか？", answer: "高度な技術力に加え、規律正しさ、被災者に寄り添う姿勢が評価されています。また、INSARAGの「Heavy」認証を持っているため、最も困難な倒壊建物での救助活動を、自己完結的に行う能力が国際的に保証されています。" },
+            { id: 44, chapter: "第8章：課題と展望", question: "外務省とJICAの役割分担は？", answer: "外務省は、外交判断に基づき派遣の「決定」や「命令」、被災国政府との政治的な調整を行います。JICAは、外務省の命令を受けて、実際の人員の招集、物資の調達、輸送の手配、現地での活動支援などの「実務」を行います。" },
+            { id: 45, chapter: "第8章：課題と展望", question: "今後のJDRの方向性は？", answer: "ニーズの多様化に応じ、対応分野を広げています（例：感染症）。また、単にモノや人を送るだけでなく、被災国の対処能力向上（キャパシティ・ビルディング）支援との連携や、国際的な調整メカニズムへの積極的な参画を通じて、「選ばれる支援」を目指しています。" },
+
+            // 第9章：その他
+            { id: 46, chapter: "第9章：その他", question: "自衛隊の輸送機は何を使いますか？", answer: "主にC-130H輸送機、C-2輸送機、KC-767空中給油・輸送機などが使われます。また、現地の状況によってはヘリコプター（UH-1, CH-47）を艦艇で運んで使用することもあります。" },
+            { id: 47, chapter: "第9章：その他", question: "日本のNGOとの連携はありますか？", answer: "はい。ジャパン・プラットフォーム（JPF）などを通じ、政府とNGOが連携して支援を行うケースが増えています。現地での情報共有や、役割分担（例えば医療チームの活動終了後にNGOが引き継ぐなど）が行われています。" },
+            { id: 48, chapter: "第9章：その他", question: "国際消防救助隊（IRT）とは？", answer: "JDR救助チームの一員として派遣される、日本の消防機関の登録隊員のことです。全国の消防本部から選抜・登録されており、高度な救助技術を持っています。消防庁が調整を行い、合同訓練などを通じて連携を強化しています。" },
+            { id: 49, chapter: "第9章：その他", question: "派遣にかかる費用は誰が負担しますか？", answer: "基本的に日本政府（国費）が負担します。JDR法に基づき、JICAの予算や各省庁の予算から支出されます。被災国に負担をかけないことが原則です。" },
+            { id: 50, chapter: "第9章：その他", question: "派遣された隊員のメンタルケアはありますか？", answer: "はい。過酷な現場での活動は隊員に大きなストレスを与えるため、帰国後に専門家によるメンタルヘルスチェックやカウンセリングの機会が設けられています。活動終了後の評価プロセス（'STOP the pain'など）の一環として、隊員のケアも重視されています。" },
+        ];
+
+        const chapters = [
+            "全て",
+            "第1章：基礎・概要",
+            "第2章：歴史・変遷",
+            "第3章：チーム構成と機能",
+            "第4章：国際基準と能力評価",
+            "第5章：国際調整と民軍連携",
+            "第6章：自衛隊の活動詳細",
+            "第7章：事例紹介",
+            "第8章：課題と展望",
+            "第9章：その他"
+        ];
+
+        // --- COMPONENTS ---
+
+        // 1. ホーム画面
+        const HomeScreen = ({ onStartStudy, onStartQuiz }) => (
+            <div className="flex flex-col items-center justify-center space-y-8 py-10 min-h-full">
+                <div className="text-center space-y-4 px-4">
+                    <div className="bg-jdr-primary w-20 h-20 rounded-full flex items-center justify-center mx-auto shadow-xl ring-4 ring-jdr-light">
+                        <Icons.Globe className="w-10 h-10 text-white" />
+                    </div>
+                    <div className="space-y-2">
+                         <h1 className="text-3xl md:text-4xl font-serif font-bold text-jdr-primary tracking-tight">
+                            国際緊急援助隊 (JDR)
+                         </h1>
+                         <h2 className="text-xl md:text-2xl font-serif font-medium text-gray-600">
+                             知識習得・連携訓練アプリ
+                         </h2>
+                    </div>
+                    <p className="text-gray-600 max-w-md mx-auto text-sm leading-relaxed">
+                        国際的な緊急援助の法制度、チーム機能、調整メカニズムを網羅。<br/>
+                        消防職員としての見識と対応力を高めるための専門学習ツール。
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl px-6">
+                    <button 
+                        onClick={onStartStudy}
+                        className="group relative overflow-hidden bg-white border border-jdr-primary/20 p-6 rounded-xl hover:bg-jdr-light transition-all shadow-md hover:shadow-xl text-left hover:-translate-y-1 duration-300"
+                    >
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-jdr-primary/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                        <div className="flex items-center justify-between mb-3 relative z-10">
+                            <h2 className="text-xl font-bold text-jdr-primary font-serif">資料室（学習）</h2>
+                            <Icons.Book className="w-6 h-6 text-jdr-accent group-hover:scale-110 transition-transform" />
+                        </div>
+                        <p className="text-sm text-gray-600 relative z-10">全50問のFAQを章ごとに閲覧・検索。<br/>詳細な解説で知識を定着させます。</p>
+                    </button>
+
+                    <button 
+                        onClick={onStartQuiz}
+                        className="group relative overflow-hidden bg-gradient-to-br from-jdr-gold to-jdr-goldDark border border-jdr-goldDark p-6 rounded-xl transition-all shadow-md hover:shadow-xl text-left text-white hover:-translate-y-1 duration-300"
+                    >
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                        <div className="flex items-center justify-between mb-3 relative z-10">
+                            <h2 className="text-xl font-bold font-serif">訓練開始（ドリル）</h2>
+                            <Icons.Shield className="w-6 h-6 text-white/90 group-hover:scale-110 transition-transform" />
+                        </div>
+                        <p className="text-sm text-white/90 relative z-10">ランダムまたは章別に問題を出題。<br/>実戦形式で知識の定着を確認します。</p>
+                    </button>
+                </div>
+
+                <div className="mt-8 text-xs text-gray-400 border-t border-gray-200 pt-4 w-full max-w-md text-center font-serif">
+                   Japan Disaster Relief Team Educational App
+                </div>
+            </div>
+        );
+
+        // 2. 資料室（学習モード）
+        const StudyMode = ({ onBack }) => {
+            const [searchTerm, setSearchTerm] = useState("");
+            const [selectedChapter, setSelectedChapter] = useState("全て");
+            const [expandedId, setExpandedId] = useState(null);
+
+            const filteredData = useMemo(() => {
+                return faqData.filter(item => {
+                    const matchChapter = selectedChapter === "全て" || item.chapter === selectedChapter;
+                    const matchSearch = item.question.includes(searchTerm) || item.answer.includes(searchTerm);
+                    return matchChapter && matchSearch;
+                });
+            }, [selectedChapter, searchTerm]);
+
+            return (
+                <div className="flex flex-col h-full bg-slate-50">
+                    {/* Header */}
+                    <div className="bg-white px-4 py-3 shadow-sm border-b border-gray-200 sticky top-0 z-20">
+                        <div className="flex items-center space-x-3 mb-4">
+                            <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                                <Icons.ArrowLeft className="w-5 h-5 text-jdr-primary" />
+                            </button>
+                            <h2 className="text-lg font-bold text-jdr-primary font-serif">資料室：全FAQ</h2>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            <div className="relative">
+                                <Icons.Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+                                <input 
+                                    type="text" 
+                                    placeholder="キーワード検索（例：INSARAG, 自衛隊）" 
+                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-jdr-accent focus:border-jdr-accent focus:outline-none transition-all"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <div className="flex overflow-x-auto pb-2 space-x-2 scrollbar-hide">
+                                {chapters.map(chapter => (
+                                    <button
+                                        key={chapter}
+                                        onClick={() => setSelectedChapter(chapter)}
+                                        className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                                            selectedChapter === chapter 
+                                                ? 'bg-jdr-primary text-white shadow-md' 
+                                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-slate-50 hover:border-jdr-primary/30'
+                                        }`}
+                                    >
+                                        {chapter.replace("：", " ")}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 overflow-y-auto p-4 bg-slate-50">
+                        <div className="space-y-4 max-w-3xl mx-auto pb-10">
+                            {filteredData.length === 0 ? (
+                                <div className="text-center py-20 text-gray-500 font-serif">
+                                    該当する項目が見つかりません。<br/>
+                                    <span className="text-sm text-gray-400 mt-2 block">検索ワードを変えてお試しください。</span>
+                                </div>
+                            ) : (
+                                filteredData.map((item) => (
+                                    <div 
+                                        key={item.id} 
+                                        className={`bg-white rounded-lg shadow-sm border overflow-hidden transition-all duration-300 ${expandedId === item.id ? 'border-jdr-accent ring-1 ring-jdr-accent shadow-md' : 'border-gray-200 hover:border-jdr-primary/30'}`}
+                                    >
+                                        <button 
+                                            onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                                            className="w-full text-left p-4 flex items-start justify-between bg-white hover:bg-slate-50 transition-colors"
+                                        >
+                                            <div className="pr-4">
+                                                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-jdr-light text-jdr-primary mb-2 border border-jdr-primary/10">
+                                                    {item.chapter.split('：')[0]}
+                                                </span>
+                                                <h3 className={`text-base font-bold leading-snug font-serif ${expandedId === item.id ? 'text-jdr-primary' : 'text-gray-800'}`}>
+                                                    <span className="mr-2 text-jdr-gold">Q{item.id}.</span>{item.question}
+                                                </h3>
+                                            </div>
+                                            {expandedId === item.id ? 
+                                                <Icons.ChevronUp className="w-5 h-5 text-jdr-primary mt-1 shrink-0" /> : 
+                                                <Icons.ChevronDown className="w-5 h-5 text-gray-400 mt-1 shrink-0" />
+                                            }
+                                        </button>
+                                        
+                                        {expandedId === item.id && (
+                                            <div className="px-5 pb-5 pt-2 bg-white">
+                                                <div className="w-full h-px bg-gradient-to-r from-jdr-primary/20 to-transparent mb-4"></div>
+                                                <div className="flex items-start">
+                                                    <span className="font-bold text-jdr-primary mr-3 text-lg font-serif">A.</span>
+                                                    <div className="text-gray-700 text-sm leading-7 whitespace-pre-wrap">
+                                                        {item.answer}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 3. 訓練モード（クイズ）
+        const QuizMode = ({ onBack }) => {
+            const [mode, setMode] = useState('menu'); // menu, playing, result
+            const [quizQueue, setQuizQueue] = useState([]);
+            const [currentIndex, setCurrentIndex] = useState(0);
+            const [showAnswer, setShowAnswer] = useState(false);
+            const [score, setScore] = useState({ correct: 0, total: 0 });
+
+            const startQuiz = (chapter) => {
+                let questions = [];
+                if (chapter === "全て") {
+                    const shuffled = [...faqData].sort(() => 0.5 - Math.random());
+                    questions = shuffled.slice(0, 10);
+                } else {
+                    questions = faqData.filter(q => q.chapter === chapter);
+                }
+                setQuizQueue(questions);
+                setCurrentIndex(0);
+                setScore({ correct: 0, total: questions.length });
+                setShowAnswer(false);
+                setMode('playing');
+            };
+
+            const handleAnswer = (isCorrect) => {
+                if (isCorrect) {
+                    setScore(prev => ({ ...prev, correct: prev.correct + 1 }));
+                }
+                
+                if (currentIndex + 1 < quizQueue.length) {
+                    setCurrentIndex(prev => prev + 1);
+                    setShowAnswer(false);
+                } else {
+                    setMode('result');
+                }
+            };
+
+            if (mode === 'menu') {
+                return (
+                    <div className="h-full bg-slate-50 flex flex-col">
+                        <div className="bg-white p-4 shadow-sm border-b flex items-center space-x-3">
+                            <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                                <Icons.ArrowLeft className="w-5 h-5 text-jdr-primary" />
+                            </button>
+                            <h2 className="text-lg font-bold text-jdr-primary font-serif">訓練メニュー選択</h2>
+                        </div>
+                        <div className="p-6 max-w-2xl mx-auto w-full grid gap-5 overflow-y-auto">
+                            <div className="bg-gradient-to-r from-jdr-gold/10 to-transparent border-l-4 border-jdr-gold p-4 rounded shadow-sm">
+                                <div className="flex items-start">
+                                    <Icons.Shield className="w-6 h-6 text-jdr-gold mr-3 mt-1" />
+                                    <div>
+                                        <h3 className="font-bold text-jdr-goldDark font-serif">状況開始！</h3>
+                                        <p className="text-sm text-gray-700 mt-1">
+                                            問題が表示されます。心の中で回答した後、「回答を確認」ボタンを押してください。<br/>
+                                            その後、自分の回答が合っていたか自己判定してください。
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={() => startQuiz("全て")}
+                                className="w-full py-5 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md hover:border-jdr-gold transition-all flex items-center px-6 group"
+                            >
+                                <div className="bg-jdr-gold p-3 rounded-lg mr-5 shadow-md group-hover:scale-110 transition-transform">
+                                    <Icons.RefreshCw className="w-6 h-6 text-white" />
+                                </div>
+                                <div className="text-left">
+                                    <h3 className="font-bold text-gray-800 text-lg font-serif group-hover:text-jdr-goldDark transition-colors">ランダム10問ドリル</h3>
+                                    <p className="text-sm text-gray-500 mt-1">全範囲からランダムに出題。実力試しに。</p>
+                                </div>
+                            </button>
+
+                            <div className="mt-2">
+                                <h3 className="font-bold text-jdr-primary mb-3 px-1 border-b border-gray-200 pb-2 font-serif flex items-center">
+                                    <Icons.Book className="w-4 h-4 mr-2" />
+                                    章別に集中訓練
+                                </h3>
+                                <div className="grid grid-cols-1 gap-3 pb-8">
+                                    {chapters.slice(1).map(chapter => (
+                                        <button 
+                                            key={chapter}
+                                            onClick={() => startQuiz(chapter)}
+                                            className="w-full text-left py-3 px-4 bg-white border border-gray-200 rounded-lg hover:bg-jdr-light hover:border-jdr-primary/30 transition-colors text-sm font-medium text-gray-700 flex justify-between items-center group"
+                                        >
+                                            <span className="group-hover:text-jdr-primary transition-colors">{chapter}</span>
+                                            <Icons.Play className="w-4 h-4 text-gray-300 group-hover:text-jdr-primary transition-colors" />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (mode === 'result') {
+                return (
+                    <div className="h-full flex flex-col items-center justify-center p-6 bg-slate-50 text-center">
+                        <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 max-w-md w-full relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-jdr-primary to-jdr-accent"></div>
+                            <div className="w-20 h-20 bg-jdr-light rounded-full flex items-center justify-center mx-auto mb-6">
+                                <Icons.Award className="w-10 h-10 text-jdr-gold" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-jdr-primary mb-2 font-serif">訓練終了</h2>
+                            <p className="text-gray-500 mb-8 text-sm">活動結果を報告します</p>
+                            
+                            <div className="mb-8">
+                                <div className="text-6xl font-bold text-jdr-primary font-serif mb-2">
+                                    {score.correct} <span className="text-3xl text-gray-400 font-sans">/ {score.total}</span>
+                                </div>
+                                <div className="inline-block px-4 py-1 rounded-full bg-slate-100 text-slate-600 text-sm font-medium">
+                                    正答率: {Math.round((score.correct / score.total) * 100)}%
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <button 
+                                    onClick={() => setMode('menu')}
+                                    className="w-full py-3 bg-jdr-primary text-white rounded-lg font-bold hover:bg-jdr-base transition-colors shadow-md"
+                                >
+                                    メニューに戻る
+                                </button>
+                                <button 
+                                    onClick={onBack}
+                                    className="w-full py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-bold hover:bg-gray-50 transition-colors"
+                                >
+                                    ホームへ戻る
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Quiz Playing UI
+            const currentQ = quizQueue[currentIndex];
+
+            return (
+                <div className="h-full flex flex-col bg-slate-50">
+                    {/* Progress Bar */}
+                    <div className="bg-white p-4 shadow-sm border-b flex justify-between items-center sticky top-0 z-10">
+                        <span className="text-sm font-bold text-jdr-primary font-serif">Q{currentIndex + 1} <span className="text-gray-400 font-sans text-xs">/ {quizQueue.length}</span></span>
+                        <div className="flex-1 mx-4 h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div 
+                                className="h-full bg-jdr-primary transition-all duration-500 ease-out" 
+                                style={{ width: `${((currentIndex + 1) / quizQueue.length) * 100}%` }}
+                            />
+                        </div>
+                        <button onClick={() => setMode('menu')} className="text-xs text-gray-400 hover:text-red-500 transition-colors">
+                            中断
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center">
+                        <div className="w-full max-w-2xl">
+                            {/* Question Card */}
+                            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 md:p-12 mb-8 min-h-[220px] flex flex-col justify-center items-center text-center relative overflow-hidden group">
+                                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-jdr-primary to-jdr-accent"></div>
+                                <div className="absolute -right-6 -top-6 w-24 h-24 bg-jdr-primary/5 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
+                                
+                                <span className="mb-6 inline-block px-3 py-1 bg-jdr-light text-jdr-primary border border-jdr-primary/10 rounded-full text-xs font-bold tracking-wider relative z-10">
+                                    {currentQ.chapter.split('：')[0]}
+                                </span>
+                                <h3 className="text-xl md:text-2xl font-bold text-gray-800 leading-relaxed font-serif relative z-10">
+                                    {currentQ.question}
+                                </h3>
+                            </div>
+
+                            {/* Answer Area */}
+                            {!showAnswer ? (
+                                <button 
+                                    onClick={() => setShowAnswer(true)}
+                                    className="w-full py-4 bg-gradient-to-r from-jdr-primary to-jdr-accent text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:translate-y-[-2px] transition-all active:translate-y-[1px] flex items-center justify-center space-x-2"
+                                >
+                                    <Icons.Shield className="w-5 h-5" />
+                                    <span>回答を確認</span>
+                                </button>
+                            ) : (
+                                <div className="space-y-6 animate-fade-in-up">
+                                    <div className="bg-white border-l-4 border-jdr-primary rounded-r-xl p-6 shadow-md relative">
+                                        <div className="flex items-center mb-3">
+                                            <div className="p-1.5 bg-jdr-primary rounded-md mr-3">
+                                                <Icons.Award className="w-4 h-4 text-white" />
+                                            </div>
+                                            <span className="font-bold text-jdr-primary font-serif">正解・解説</span>
+                                        </div>
+                                        <div className="text-gray-800 leading-7 text-sm whitespace-pre-wrap pl-1">
+                                            {currentQ.answer}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button 
+                                            onClick={() => handleAnswer(false)}
+                                            className="py-4 bg-white border border-red-200 text-red-600 font-bold rounded-xl hover:bg-red-50 transition-colors flex flex-col items-center justify-center shadow-sm hover:shadow-md group"
+                                        >
+                                            <Icons.XCircle className="w-8 h-8 mb-2 text-red-400 group-hover:text-red-600 transition-colors" />
+                                            <span className="text-sm">不正解・要復習</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => handleAnswer(true)}
+                                            className="py-4 bg-white border border-green-200 text-green-600 font-bold rounded-xl hover:bg-green-50 transition-colors flex flex-col items-center justify-center shadow-sm hover:shadow-md group"
+                                        >
+                                            <Icons.CheckCircle className="w-8 h-8 mb-2 text-green-400 group-hover:text-green-600 transition-colors" />
+                                            <span className="text-sm">正解・理解した</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APP ---
+        const App = () => {
+            const [view, setView] = useState('home'); // home, study, quiz
+
+            return (
+                <div className="max-w-md mx-auto md:max-w-4xl h-screen bg-white md:shadow-2xl overflow-hidden flex flex-col relative font-sans text-gray-800">
+                    <main className="flex-1 overflow-hidden relative">
+                        {view === 'home' && (
+                            <HomeScreen 
+                                onStartStudy={() => setView('study')}
+                                onStartQuiz={() => setView('quiz')}
+                            />
+                        )}
+                        {view === 'study' && (
+                            <StudyMode onBack={() => setView('home')} />
+                        )}
+                        {view === 'quiz' && (
+                            <QuizMode onBack={() => setView('home')} />
+                        )}
+                    </main>
+
+                    {view === 'home' && (
+                        <footer className="bg-jdr-base text-white p-4 text-center text-[10px] tracking-wider uppercase opacity-90">
+                            JDR Education & Training Support Tool
+                        </footer>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+    
+    <style>
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translate3d(0, 20px, 0);
+            }
+            to {
+                opacity: 1;
+                transform: translate3d(0, 0, 0);
+            }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.4s ease-out forwards;
+        }
+    </style>
+</body>
+</html>
