@@ -181,7 +181,7 @@ e-Learning119Q  救急業務
 
     <div class="card">
       <div class="lesson-title">Lesson 14</div>
-      <div class="lesson-desc">記録と報告書作成</div>
+      <div class="lesson-desc">土砂災害防止法</div>
       <a href="lesson14/index.html" class="button">▶ 学習する</a>
     </div>
 
