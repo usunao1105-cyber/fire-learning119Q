@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>土砂災害防止法マスター</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel (for JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background: linear-gradient(-45deg, #ff9a9e, #fad0c4, #fad0c4, #fbc2eb, #a18cd1, #fbc2eb);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+
+        /* 3D Flip Animation */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        
+        /* Custom Animations */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .animate-pop-in {
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.5s ease-out forwards;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05); 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(251, 146, 60, 0.5); 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(251, 146, 60, 0.8); 
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 overflow-x-hidden">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Icons (SVG Components) ---
+        const Icons = {
+            BookOpen: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+            CheckCircle: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+            AlertTriangle: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+            Map: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>,
+            Gavel: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m14 13-7.5 7.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L11 10"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/></svg>,
+            Home: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+            ChevronRight: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>,
+            RefreshCw: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>,
+            Trophy: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>,
+            Star: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+            XCircle: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
+        };
+
+        // --- Data ---
+        const categories = [
+          { id: 'basics', title: 'I. 基礎・概要', icon: <Icons.BookOpen />, description: '法律の目的や背景、対策の種類について', color: 'text-blue-500', bg: 'bg-blue-100' },
+          { id: 'zones', title: 'II. 区域指定', icon: <Icons.AlertTriangle />, description: 'イエローゾーン・レッドゾーンの規制内容', color: 'text-amber-500', bg: 'bg-amber-100' },
+          { id: 'maps', title: 'III. ハザードマップ', icon: <Icons.Map />, description: '情報の伝達、周知、警戒情報について', color: 'text-green-500', bg: 'bg-green-100' },
+          { id: 'admin', title: 'IV. 行政の責任', icon: <Icons.Gavel />, description: '国家賠償法や判例、管理瑕疵について', color: 'text-purple-500', bg: 'bg-purple-100' },
+          { id: 'related', title: 'V. 関連法制度', icon: <Icons.Home />, description: '砂防三法、盛土規制法、保安林など', color: 'text-indigo-500', bg: 'bg-indigo-100' },
+          { id: 'evac', title: 'VI. 避難・緊急対応', icon: <Icons.CheckCircle />, description: '警戒区域、要配慮者、支援法など', color: 'text-rose-500', bg: 'bg-rose-100' },
+        ];
+
+        const allQuestions = [
+            // I. 土砂災害防止法の基礎
+            { id: 1, categoryId: 'basics', q: "土砂災害防止法とはどのような法律ですか？", a: "土砂災害から国民の生命を守るため、危険な区域を明らかにし、警戒避難体制の整備や一定の開発行為の制限、建築物の構造規制などのソフト対策を推進する法律です。" },
+            { id: 2, categoryId: 'basics', q: "土砂災害防止法の対象となる自然現象は何ですか？", a: "「急傾斜地の崩壊（がけ崩れ）」、「土石流」、「地滑り」の3つです。" },
+            { id: 3, categoryId: 'basics', q: "土砂災害防止法が制定された背景にはどのような災害がありましたか？", a: "平成11年（1999年）6月に発生した「広島豪雨災害」などが契機となっています。" },
+            { id: 4, categoryId: 'basics', q: "土砂災害防止対策にはどのような種類がありますか？", a: "砂防えん堤などの施設整備を行う「ハード対策」と、警戒避難体制の整備や開発規制などの「ソフト対策」があります。土砂災害防止法はソフト対策を推進するものです。" },
+            { id: 5, categoryId: 'basics', q: "基礎調査とは何ですか？", a: "都道府県が、土砂災害のおそれがある区域の地形、地質、土地利用状況などを調査することです。この結果に基づき区域指定が行われます。" },
+            { id: 6, categoryId: 'basics', q: "基礎調査の結果は公表されますか？", a: "はい、都道府県は基礎調査の結果を公表することが義務付けられています。" },
+
+            // II. 区域指定（イエローゾーン・レッドゾーン）
+            { id: 7, categoryId: 'zones', q: "「土砂災害警戒区域（イエローゾーン）」とはどのような区域ですか？", a: "土砂災害が発生した場合に、住民の生命または身体に危害が生じるおそれがあると認められる区域です。" },
+            { id: 8, categoryId: 'zones', q: "「土砂災害特別警戒区域（レッドゾーン）」とはどのような区域ですか？", a: "土砂災害警戒区域のうち、建築物に損壊が生じ、住民に著しい危害が生じるおそれがある区域です。" },
+            { id: 9, categoryId: 'zones', q: "区域の指定を行うのは誰ですか？", a: "都道府県知事が指定します。" },
+            { id: 10, categoryId: 'zones', q: "イエローゾーンに指定されると、どのような措置が取られますか？", a: "市町村地域防災計画に警戒避難体制が記載され、ハザードマップ等による住民への周知や、宅地建物取引時の重要事項説明が義務付けられます。" },
+            { id: 11, categoryId: 'zones', q: "レッドゾーンでは、どのような開発規制がありますか？", a: "住宅宅地分譲や、社会福祉施設・学校・医療施設などの「災害時要援護者関連施設」の建築を目的とした開発行為は、許可制となります。" },
+            { id: 12, categoryId: 'zones', q: "レッドゾーン内で家を建てる場合、建築確認は必要ですか？", a: "はい。居室を有する建築物は、土石等の衝撃に対して構造が安全であるかどうか、建築確認を受ける必要があります。" },
+            { id: 13, categoryId: 'zones', q: "レッドゾーンにある既存の建物への措置はありますか？", a: "土砂災害時に著しい危害が生じるおそれのある建築物の所有者に対し、都道府県知事が移転等の勧告を行うことができます。" },
+            { id: 14, categoryId: 'zones', q: "移転勧告を受けた場合の支援制度はありますか？", a: "住宅金融支援機構の融資や、がけ地近接等危険住宅移転事業による費用の補助などの支援措置があります。" },
+            { id: 15, categoryId: 'zones', q: "不動産取引において、これらの区域はどう扱われますか？", a: "宅地建物取引業者は、対象物件が警戒区域（イエロー・レッド）内にある場合、重要事項説明を行うことが義務付けられています。" },
+
+            // III. ハザードマップと情報の伝達
+            { id: 16, categoryId: 'maps', q: "土砂災害ハザードマップとは何ですか？", a: "土砂災害警戒区域等の位置や、情報の伝達方法、避難場所などを記載した地図です。" },
+            { id: 17, categoryId: 'maps', q: "ハザードマップの作成・配布義務は誰にありますか？", a: "土砂災害警戒区域を含む市町村の長に義務があります。" },
+            { id: 18, categoryId: 'maps', q: "ハザードマップには必ず記載しなければならない項目（共通項目）は何ですか？", a: "①土砂災害警戒区域等および自然現象の種類、②情報の伝達方法、③避難地に関する事項（避難場所など）の3点です。" },
+            { id: 19, categoryId: 'maps', q: "地域の実情に応じて記載される項目（地域項目）には何がありますか？", a: "雨量情報、土砂災害警戒情報、前兆現象、過去の災害履歴、主要な避難路などがあります。" },
+            { id: 20, categoryId: 'maps', q: "ハザードマップはどのように住民に周知されますか？", a: "印刷物の配布やインターネットでの公開など、適切な方法で各世帯に提供されます。" },
+            { id: 21, categoryId: 'maps', q: "要配慮者（高齢者など）への情報伝達はどうなっていますか？", a: "警戒区域内の要配慮者利用施設については、市町村地域防災計画において情報伝達方法を定めることが義務付けられています。" },
+            { id: 22, categoryId: 'maps', q: "土砂災害の前兆現象にはどのようなものがありますか？", a: "がけからの水湧き出し、小石の落下（がけ崩れ）、山鳴り、川の水位低下（土石流）、地面のひび割れ（地滑り）などがあります。" },
+            { id: 23, categoryId: 'maps', q: "「土砂災害警戒情報」とは何ですか？", a: "大雨警報発表中に土砂災害の危険度が高まった際、都道府県と気象庁が共同で発表する情報です。" },
+
+            // IV. 行政の法的責任（国家賠償法など）
+            { id: 24, categoryId: 'admin', q: "災害時、行政に法的責任（損害賠償責任）が生じるのはどのような場合ですか？", a: "道路や河川などの公の営造物の設置・管理に「瑕疵（通常有すべき安全性の欠如）」があった場合、国家賠償法第2条に基づき責任を負うことがあります。" },
+            { id: 25, categoryId: 'admin', q: "自然災害は「不可抗力」として行政の責任は免除されますか？", a: "必ずしも免除されません。危険の発生が「予見可能」であり、対策をとれば「結果を回避」できた場合は、責任を問われることがあります。" },
+            { id: 26, categoryId: 'admin', q: "「予見可能性」とは何ですか？", a: "過去の災害歴や地形などから、危険な事態が発生することを事前に認識できたかどうかです。" },
+            { id: 27, categoryId: 'admin', q: "「結果回避可能性」とは何ですか？", a: "適切な措置（防護施設の設置や通行規制など）を講じていれば、被害を防げたかどうかです。" },
+            { id: 28, categoryId: 'admin', q: "「予算がない」ことは、行政が安全対策を怠った理由になりますか？", a: "道路などの人工公物については、原則として予算不足を理由に責任を免れることはできないとされています。" },
+            { id: 29, categoryId: 'admin', q: "河川（自然公物）の管理責任は道路と同じですか？", a: "河川整備には莫大な費用と時間がかかるため、過渡的な安全性で足りるとする判例（大東水害訴訟など）があり、道路とは判断基準が異なる場合があります。" },
+            { id: 30, categoryId: 'admin', q: "ソフト対策（通行止めや避難誘導）の不備でも責任を問われますか？", a: "はい。物理的な対策が困難でも、通行規制や情報提供などのソフト対策で事故を回避できた場合、不作為が瑕疵とされることがあります。" },
+            { id: 31, categoryId: 'admin', q: "飛騨川バス転落事故（昭和43年）の判決の意義は？", a: "自然災害の発生時期や規模を完全に予測できなくても、危険性が「蓋然的」に認められれば予見可能とし、行政の責任を厳しく問う基準となりました。" },
+            { id: 32, categoryId: 'admin', q: "キツネなどの小動物対策の不備で行政責任は問われますか？", a: "平成22年の最高裁判決では、全ての侵入を防ぐ対策までは求められず、具体的状況から実質的な危険性が低いとして責任が否定された事例があります。" },
+
+            // V. その他の関連法制度
+            { id: 33, categoryId: 'related', q: "「砂防三法」とは何ですか？", a: "「砂防法」、「地すべり等防止法」、「急傾斜地の崩壊による災害の防止に関する法律」の総称で、主にハード対策（工事）を行うための法律です。" },
+            { id: 34, categoryId: 'related', q: "砂防三法と土砂災害防止法の違いは何ですか？", a: "砂防三法が対策工事などの「ハード対策」を中心とするのに対し、土砂災害防止法は警戒避難などの「ソフト対策」を中心としています。" },
+            { id: 35, categoryId: 'related', q: "盛土規制法（宅地造成及び特定盛土等規制法）とは？", a: "盛土による災害を防ぐため、土地の用途（宅地、森林、農地など）にかかわらず、危険な盛土等を包括的に規制する法律です。" },
+            { id: 36, categoryId: 'related', q: "盛土規制法では何が必要になりますか？", a: "規制区域内で行う一定規模以上の盛土等の工事には、都道府県知事等の許可が必要になります。" },
+            { id: 37, categoryId: 'related', q: "違法な盛土に対する罰則はありますか？", a: "はい。最大で懲役3年以下、法人には3億円以下の罰金など、厳しい罰則が設けられています。" },
+            { id: 38, categoryId: 'related', q: "保安林制度とは何ですか？", a: "水源涵養や土砂災害の防備などの公益目的のため、伐採や土地の形質変更を規制する森林制度です。" },
+            { id: 39, categoryId: 'related', q: "保安林で木を切ることはできますか？", a: "都道府県知事の許可が必要であり、指定された制限の範囲内で行う必要があります。" },
+            { id: 40, categoryId: 'related', q: "「災害対策基本法」の役割は？", a: "日本の防災対策の基本法で、国や自治体の責務、防災計画の作成、災害時の応急対策などを定めています。" },
+
+            // VI. 避難と緊急対応
+            { id: 41, categoryId: 'evac', q: "災害時の「警戒区域」とは何ですか？", a: "災害対策基本法第63条に基づき、市町村長が設定する区域で、立入りが禁止・制限され、退去が命じられます（罰則あり）。" },
+            { id: 42, categoryId: 'evac', q: "警戒区域に無断で立ち入るとどうなりますか？", a: "10万円以下の罰金または拘留に処される可能性があります。" },
+            { id: 43, categoryId: 'evac', q: "避難指示等の発令基準はどこで確認できますか？", a: "市町村の地域防災計画やハザードマップ等に、雨量基準などが記載されています。" },
+            { id: 44, categoryId: 'evac', q: "「避難準備情報（現：高齢者等避難）」とは？", a: "高齢者など避難に時間がかかる人が避難を開始するタイミングで出される情報です。" },
+            { id: 45, categoryId: 'evac', q: "広域避難とは何ですか？", a: "市町村内に安全な避難場所がない場合などに、市町村境を越えて避難することです。事前に自治体間での調整が必要です。" },
+            { id: 46, categoryId: 'evac', q: "災害時要援護者（要配慮者）とは誰のことですか？", a: "高齢者、障害者、乳幼児など、自力での避難が困難で支援を必要とする人々のことです。" },
+            { id: 47, categoryId: 'evac', q: "要援護者名簿の作成は義務ですか？", a: "災害対策基本法の改正により、市町村長は避難行動要支援者名簿を作成しなければならないとされています。" },
+            { id: 48, categoryId: 'evac', q: "指定緊急避難場所と指定避難所の違いは？", a: "「指定緊急避難場所」は命を守るために緊急的に逃げ込む場所、「指定避難所」は避難生活を送るための場所です。" },
+            { id: 49, categoryId: 'evac', q: "災害救助法が適用されるとどうなりますか？", a: "国の責任において、避難所の設置や炊き出しなどの応急救助に対し、国庫負担が行われます。" },
+            { id: 50, categoryId: 'evac', q: "被災者生活再建支援法とは？", a: "自然災害で著しい被害を受けた世帯に対し、最大300万円の支援金を支給し、生活再建を助ける法律です。" },
+        ];
+
+        // --- App Component ---
+        function App() {
+            const [currentMode, setCurrentMode] = useState('home'); 
+            const [selectedCategory, setSelectedCategory] = useState(null);
+            const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+            const [isFlipped, setIsFlipped] = useState(false);
+            const [score, setScore] = useState(0);
+            const [history, setHistory] = useState([]);
+
+            const startCategory = (categoryId) => {
+                setSelectedCategory(categoryId);
+                setCurrentQuestionIndex(0);
+                setScore(0);
+                setHistory([]);
+                setIsFlipped(false);
+                setCurrentMode('quiz');
+            };
+
+            const currentQuestions = selectedCategory 
+                ? allQuestions.filter(q => q.categoryId === selectedCategory) 
+                : [];
+
+            const handleAnswer = (isCorrect) => {
+                if (isCorrect) setScore(score + 1);
+                
+                const newHistory = [...history, { 
+                    id: currentQuestions[currentQuestionIndex].id, 
+                    result: isCorrect ? 'correct' : 'wrong' 
+                }];
+                setHistory(newHistory);
+
+                if (currentQuestionIndex < currentQuestions.length - 1) {
+                    setTimeout(() => {
+                        setIsFlipped(false);
+                        setCurrentQuestionIndex(currentQuestionIndex + 1);
+                    }, 400);
+                } else {
+                    setTimeout(() => {
+                        setCurrentMode('result');
+                    }, 400);
+                }
+            };
+
+            const goHome = () => {
+                setCurrentMode('home');
+                setSelectedCategory(null);
+            };
+
+            // Trigger confetti on result screen
+            useEffect(() => {
+                if (currentMode === 'result') {
+                    const percentage = Math.round((score / currentQuestions.length) * 100);
+                    if (percentage >= 80) {
+                        confetti({
+                            particleCount: 150,
+                            spread: 70,
+                            origin: { y: 0.6 },
+                            colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff']
+                        });
+                    }
+                }
+            }, [currentMode, score, currentQuestions.length]);
+
+            // --- Home Screen ---
+            const HomeScreen = () => (
+                <div className="flex flex-col items-center justify-center min-h-screen p-6 relative z-10">
+                    <div className="text-center mb-12 animate-slide-up">
+                        <div className="inline-flex items-center justify-center p-6 bg-white/90 rounded-full mb-6 shadow-2xl animate-float backdrop-blur-md">
+                            <div className="text-orange-500 transform scale-125"><Icons.Trophy /></div>
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4 drop-shadow-lg">
+                            土砂災害防止法マスター
+                        </h1>
+                        <p className="text-white/90 text-lg font-bold drop-shadow-md">
+                            法制度を楽しく学び、防災の知識を深めましょう。
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl animate-slide-up" style={{animationDelay: '0.2s'}}>
+                        {categories.map((cat, idx) => (
+                            <button
+                                key={cat.id}
+                                onClick={() => startCategory(cat.id)}
+                                className="glass-card rounded-2xl p-6 text-left group hover:scale-105 transition-all duration-300 border border-white/40 hover:border-white/80"
+                                style={{animationDelay: `${idx * 0.1}s`}}
+                            >
+                                <div className="flex items-center mb-4">
+                                    <div className={`p-3 rounded-xl ${cat.bg} ${cat.color} shadow-inner`}>
+                                        {cat.icon}
+                                    </div>
+                                    <span className="ml-3 font-bold text-slate-800 text-lg group-hover:text-orange-500 transition-colors">
+                                        {cat.title}
+                                    </span>
+                                </div>
+                                <p className="text-sm text-slate-500 mb-6 font-medium leading-relaxed">{cat.description}</p>
+                                <div className="flex items-center text-sm font-bold text-orange-500 opacity-0 transform translate-x-[-10px] group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                                    学習を開始する <span className="ml-1"><Icons.ChevronRight /></span>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+
+            // --- Quiz Screen ---
+            const QuizScreen = () => {
+                const question = currentQuestions[currentQuestionIndex];
+                const progressPercentage = ((currentQuestionIndex) / currentQuestions.length) * 100;
+
+                return (
+                    <div className="flex flex-col min-h-screen relative z-10">
+                        {/* Header */}
+                        <div className="glass-panel px-6 py-4 flex items-center justify-between sticky top-0 z-20 m-4 rounded-2xl shadow-lg">
+                            <button onClick={goHome} className="text-sm font-bold text-slate-500 hover:text-red-500 flex items-center transition-colors">
+                                <span className="mr-1"><Icons.XCircle /></span> 中断
+                            </button>
+                            <div className="flex-1 mx-6">
+                                <div className="h-3 w-full bg-slate-200/50 rounded-full overflow-hidden shadow-inner">
+                                    <div 
+                                        className="h-full bg-gradient-to-r from-orange-400 to-red-500 transition-all duration-500 ease-out shadow-lg"
+                                        style={{ width: `${progressPercentage}%` }}
+                                    />
+                                </div>
+                            </div>
+                            <div className="text-lg font-extrabold text-orange-600 drop-shadow-sm">
+                                Score: {score}
+                            </div>
+                        </div>
+
+                        {/* Card Area */}
+                        <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8">
+                            <div className="w-full max-w-3xl perspective-1000">
+                                <div className="relative transition-all duration-500">
+                                    
+                                    {!isFlipped ? (
+                                        // Question
+                                        <div className="glass-card rounded-3xl p-8 md:p-14 min-h-[450px] flex flex-col items-center justify-center text-center animate-pop-in border-b-8 border-orange-400">
+                                            <div className="inline-block px-4 py-1 rounded-full bg-orange-100 text-orange-600 font-bold tracking-widest text-sm mb-8 uppercase shadow-sm">
+                                                Question {currentQuestionIndex + 1} / {currentQuestions.length}
+                                            </div>
+                                            <h2 className="text-2xl md:text-4xl font-extrabold text-slate-800 leading-relaxed mb-10 drop-shadow-sm">
+                                                {question.q}
+                                            </h2>
+                                            <button 
+                                                onClick={() => setIsFlipped(true)}
+                                                className="mt-auto bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-4 px-12 rounded-full shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center text-lg"
+                                            >
+                                                答えを見る
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        // Answer
+                                        <div className="glass-card rounded-3xl p-8 md:p-14 min-h-[450px] flex flex-col animate-pop-in border-b-8 border-blue-400">
+                                            <div className="flex items-center justify-between mb-6 border-b border-slate-200 pb-4">
+                                                <span className="text-slate-400 font-bold text-xs uppercase tracking-widest">Answer</span>
+                                                <div className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-xs font-bold">Q{currentQuestionIndex + 1}</div>
+                                            </div>
+                                            
+                                            <div className="flex-1 overflow-y-auto mb-8">
+                                                <div className="bg-blue-50/50 p-6 rounded-2xl border-l-8 border-blue-500">
+                                                    <p className="text-lg md:text-xl text-slate-800 leading-loose font-medium">
+                                                        {question.a}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-auto">
+                                                <p className="text-center text-sm font-bold text-slate-400 mb-4">自己評価</p>
+                                                <div className="grid grid-cols-2 gap-6">
+                                                    <button 
+                                                        onClick={() => handleAnswer(false)}
+                                                        className="group flex flex-col items-center justify-center p-5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all hover:shadow-lg active:scale-95"
+                                                    >
+                                                        <div className="mb-2 transform group-hover:-rotate-12 transition-transform"><Icons.RefreshCw /></div>
+                                                        <span className="font-bold">復習する</span>
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleAnswer(true)}
+                                                        className="group flex flex-col items-center justify-center p-5 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-white transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+                                                    >
+                                                        <div className="mb-2 transform group-hover:scale-125 transition-transform"><Icons.Star /></div>
+                                                        <span className="font-bold text-lg">バッチリ！</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // --- Result Screen ---
+            const ResultScreen = () => {
+                const percentage = Math.round((score / currentQuestions.length) * 100);
+                const categoryInfo = categories.find(c => c.id === selectedCategory);
+                
+                let message = "";
+                let titleColor = "";
+                if (percentage === 100) {
+                    message = "完璧です！マスターレベル！";
+                    titleColor = "text-yellow-500";
+                } else if (percentage >= 80) {
+                    message = "素晴らしい！あと少しで完璧です。";
+                    titleColor = "text-emerald-500";
+                } else {
+                    message = "お疲れ様でした。復習して知識を定着させましょう。";
+                    titleColor = "text-slate-500";
+                }
+
+                return (
+                    <div className="flex flex-col items-center justify-center min-h-screen p-6 relative z-10">
+                        <div className="glass-card rounded-[2.5rem] p-10 md:p-16 w-full max-w-xl text-center shadow-2xl animate-pop-in">
+                            <div className="mb-8 inline-flex p-6 rounded-full bg-slate-50 shadow-inner animate-float">
+                                {percentage === 100 ? (
+                                    <div className="text-yellow-400 transform scale-150"><Icons.Trophy /></div>
+                                ) : (
+                                    <div className="text-emerald-500 transform scale-150"><Icons.CheckCircle /></div>
+                                )}
+                            </div>
+                            
+                            <h2 className="text-3xl font-extrabold text-slate-800 mb-2">{categoryInfo?.title} 完了</h2>
+                            <p className={`font-bold text-xl mb-10 ${titleColor}`}>{message}</p>
+
+                            <div className="grid grid-cols-2 gap-6 mb-10">
+                                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm">
+                                    <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2">Score</p>
+                                    <p className="text-4xl font-black text-slate-800">{score}<span className="text-lg font-bold text-slate-400 ml-1">/{currentQuestions.length}</span></p>
+                                </div>
+                                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm">
+                                    <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2">Accuracy</p>
+                                    <p className="text-4xl font-black text-slate-800">{percentage}<span className="text-lg font-bold text-slate-400 ml-1">%</span></p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <button 
+                                    onClick={() => startCategory(selectedCategory)}
+                                    className="w-full py-4 px-6 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-2xl font-bold shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center justify-center text-lg"
+                                >
+                                    <span className="mr-2"><Icons.RefreshCw /></span> もう一度挑戦する
+                                </button>
+                                <button 
+                                    onClick={goHome}
+                                    className="w-full py-4 px-6 bg-white border-2 border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl font-bold transition-colors text-lg"
+                                >
+                                    他のカテゴリを選ぶ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="antialiased">
+                    {currentMode === 'home' && <HomeScreen />}
+                    {currentMode === 'quiz' && <QuizScreen />}
+                    {currentMode === 'result' && <ResultScreen />}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
