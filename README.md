@@ -187,7 +187,7 @@ e-Learning119Q  救急業務
 
     <div class="card">
       <div class="lesson-title">Lesson 15</div>
-      <div class="lesson-desc">救急隊員のメンタルヘルス</div>
+      <div class="lesson-desc">緊急車両 運転技能研修</div>
       <a href="lesson15/index.html" class="button">▶ 学習する</a>
     </div>
   </div>
