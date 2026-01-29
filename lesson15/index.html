@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>緊急車両 運転技能研修システム (C.D.T.S)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        /* Custom Animations & Styles */
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .rotate-y-0 { transform: rotateY(0deg); }
+        .backface-hidden { backface-visibility: hidden; }
+        .perspective-1000 { perspective: 1000px; }
+        
+        .animate-pulse-subtle { animation: pulseRed 2s infinite; }
+        @keyframes pulseRed {
+            0%, 100% { box-shadow: inset 0 0 0 0 rgba(239, 68, 68, 0); }
+            50% { box-shadow: inset 0 0 50px 0 rgba(239, 68, 68, 0.1); }
+        }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-slide-up { animation: slideUp 0.5s ease-out; }
+        
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background-color: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; border-radius: 4px; }
+        
+        body {
+            background-color: #0f172a; /* slate-900 */
+            color: white;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- ICONS (Inline SVG components to avoid dependencies) ---
+        const Icon = ({ path, className, ...props }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className} 
+                {...props}
+            >
+                {path}
+            </svg>
+        );
+
+        const Icons = {
+            Siren: (props) => <Icon path={<><path d="M7 12a5 5 0 0 1 5-5v0a5 5 0 0 1 5 5v6H7v-6Z"/><path d="M5 20a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2H5v-2Z"/><path d="M21 12h1"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="M12 2v1"/><path d="m4.929 4.929.707.707"/><path d="M12 12v6"/></>} {...props} />,
+            Shield: (props) => <Icon path={<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>} {...props} />,
+            BookOpen: (props) => <Icon path={<><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>} {...props} />,
+            Play: (props) => <Icon path={<polygon points="5 3 19 12 5 21 5 3"/>} {...props} />,
+            RotateCcw: (props) => <Icon path={<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"/><path d="M3 3v9h9"/></>} {...props} />,
+            CheckCircle: (props) => <Icon path={<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>} {...props} />,
+            XCircle: (props) => <Icon path={<><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></>} {...props} />,
+            Award: (props) => <Icon path={<><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></>} {...props} />,
+            Activity: (props) => <Icon path={<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>} {...props} />,
+            Zap: (props) => <Icon path={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>} {...props} />,
+            Brain: (props) => <Icon path={<><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></>} {...props} />,
+            ChevronRight: (props) => <Icon path={<polyline points="9 18 15 12 9 6"/>} {...props} />,
+            Menu: (props) => <Icon path={<><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></>} {...props} />,
+            Volume2: (props) => <Icon path={<><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></>} {...props} />,
+            Trash2: (props) => <Icon path={<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>} {...props} />,
+            ClipboardCheck: (props) => <Icon path={<><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></>} {...props} />,
+            Copy: (props) => <Icon path={<><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></>} {...props} />
+        };
+
+        // --- DATA ---
+        const faqData = [
+            // I. 基礎知識・定義
+            { id: 1, category: "基礎知識", q: "コメンタリー運転とは何ですか？", a: "運転中の状況、判断、操作を、実況放送のように声に出して説明しながら運転する方法。" },
+            { id: 2, category: "基礎知識", q: "コメンタリー運転の発祥はどこですか？", a: "1960年代のイギリス（ロンドン警視庁）。" },
+            { id: 3, category: "基礎知識", q: "別名で何と呼ばれますか？", a: "「実況中継運転」や「コメンタリードライビング」。ロードクラフトの一部でもある。" },
+            { id: 4, category: "基礎知識", q: "具体的に何を声に出せばよいですか？", a: "「見たもの（視覚情報）」「感じたこと（予測）」「判断したこと（意思決定）」「操作したこと（行動）」の4点。" },
+            { id: 5, category: "基礎知識", q: "誰が実践すべきものですか？", a: "初心者からベテランまで全て。特に警察、バス、トラック等のプロドライバー。" },
+            { id: 6, category: "基礎知識", q: "「指差呼称」との違いは？", a: "指差呼称は「確認行動」重視。コメンタリー運転は「継続的な実況プロセス」重視。" },
+            { id: 7, category: "基礎知識", q: "常に喋り続けなければなりませんか？", a: "無理に全て言う必要はない。重要なハザード（危険要因）や確認事項に絞る。" },
+            { id: 8, category: "基礎知識", q: "英語での発声でも良いですか？", a: "良い。脳内整理が目的なので、最も直感的に理解できる母国語が望ましい。" },
+            // II. 目的・効果
+            { id: 9, category: "目的・効果", q: "コメンタリー運転の最大の目的は何ですか？", a: "漫然運転を防ぎ、集中力を維持すること。" },
+            { id: 10, category: "目的・効果", q: "「だろう運転」に対してどのような効果がありますか？", a: "状況を客観視することで、都合の良い予測（だろう運転）を抑制する。" },
+            { id: 11, category: "目的・効果", q: "「かもしれない運転」とはどう関係しますか？", a: "発声することで危険予測を促し、自然と「かもしれない運転」ができるようになる。" },
+            { id: 12, category: "目的・効果", q: "居眠り運転の防止になりますか？", a: "なる。発声が脳を刺激し、眠気防止や覚醒レベルの向上に役立つ。" },
+            { id: 13, category: "目的・効果", q: "見落とし（認知ミス）は減りますか？", a: "減る。対象を言語化（ラベリング）することで、視覚情報を確かにできる。" },
+            { id: 14, category: "目的・効果", q: "精神的な効果はありますか？", a: "焦りやイライラを抑える（メタ認知効果）。パニック回避に役立つ。" },
+            { id: 15, category: "目的・効果", q: "運転技術そのものは向上しますか？", a: "認知・判断プロセスが強化され、結果としてスムーズで安全な速度管理が可能になる。" },
+            { id: 16, category: "目的・効果", q: "脳科学的な意義は？", a: "無意識の自動化された運転を、発声によって意識的な行動へ引き上げ、脳の処理レベルを高める。" },
+            // III. 実践方法・テクニック
+            { id: 17, category: "実践方法", q: "基本的な発声の3ステップは？", a: "①スキャニング（発見）→ ②予測（判断）→ ③アクション（操作）。" },
+            { id: 18, category: "実践方法", q: "交差点での発声例は？", a: "「前方信号赤、減速」「対向右折車あり、注意」「左右よし」「発進」など。" },
+            { id: 19, category: "実践方法", q: "車線変更時の発声例は？", a: "「前方遅い、追越判断」「ミラーよし、目視よし」「ウインカー点灯」「変更開始」など。" },
+            { id: 20, category: "実践方法", q: "狭い道での発声例は？", a: "「道幅狭い、減速」「死角子供予測」「カーブミラー確認」「徐行通過」など。" },
+            { id: 21, category: "実践方法", q: "声の大きさは？", a: "自分が聞こえる程度の、冷静で落ち着いた大きさで良い。" },
+            { id: 22, category: "実践方法", q: "文章で話すべきか、単語か？", a: "短く簡潔な「単語」推奨。長いと次の危険発見が遅れるため。" },
+            { id: 23, category: "実践方法", q: "情報が多すぎる場合は？", a: "最も危険度が高いもの（ハザード）や、運転に直接影響するものに絞る。" },
+            { id: 24, category: "実践方法", q: "同乗者がいる時も行いますか？", a: "訓練時は必須。通常時は黙唱でも良いが、指導員がいる場合は聞こえるように言う。" },
+            // IV. 導入と教育
+            { id: 25, category: "教育・定着", q: "導入初期の教育期間の目安は？", a: "プロドライバー（未経験者）で約1ヶ月〜1ヶ月半。" },
+            { id: 26, category: "教育・定着", q: "いきなり公道で実践しても良い？", a: "最初は交通量の少ない場所推奨。慣れないと注意散漫になるリスクがある。" },
+            { id: 27, category: "教育・定着", q: "添乗指導は必要？", a: "極めて重要。発声と実際の確認動作が一致しているか第三者がチェックする。" },
+            { id: 28, category: "教育・定着", q: "定着させるためのフォローアップは？", a: "1ヶ月後、6ヶ月後などに定期添乗を行い、形骸化していないか確認する。" },
+            { id: 29, category: "教育・定着", q: "ドラレコは活用できますか？", a: "できる。自分の発声と状況を客観的に振り返る研修に有効。" },
+            { id: 30, category: "教育・定着", q: "学習教材はありますか？", a: "JAFのeラーニングや、交通共済協同組合のDVDなどがある。" },
+            { id: 31, category: "教育・定着", q: "グループ学習は有効？", a: "有効。映像を見ながらのディスカッションで意識共有ができる。" },
+            { id: 32, category: "教育・定着", q: "指導員の評価ポイントは？", a: "声が出ているかだけでなく「適切なタイミングで危険認識できているか」「操作と連動しているか」。" },
+            // V. メリット・デメリット・課題
+            { id: 33, category: "課題", q: "最大のデメリットは？", a: "「手段の目的化」による注意分散や、認知的過負荷（オーバーロード）。" },
+            { id: 34, category: "課題", q: "「認知的過負荷」とは？", a: "情報過多で脳の処理能力を超え、運転操作への反応が遅れること。" },
+            { id: 35, category: "課題", q: "「形骸化」とは？", a: "口先だけで確認し、実際には見ていない（目が動いていない）状態。" },
+            { id: 36, category: "課題", q: "形骸化を防ぐには？", a: "定期的な添乗チェックや、本質的な意義の再教育。" },
+            { id: 37, category: "課題", q: "恥ずかしくないですか？", a: "初期は抵抗があるが、「プロの標準技能」という組織文化作りで克服する。" },
+            { id: 38, category: "課題", q: "事故はゼロになりますか？", a: "万能ではない。体調管理や車両点検などと併せて行う必要がある。" },
+            { id: 39, category: "課題", q: "疲労しませんか？", a: "慣れないうちは疲れるが、習慣化すれば情報の整理が進み、逆に無駄な疲労が減る。" },
+            { id: 40, category: "課題", q: "向いていない人は？", a: "黙って集中したい人にはストレスになり得るが、訓練で習得可能。" },
+            // VI. 緊急車両・特定業種
+            { id: 41, category: "緊急車両", q: "緊急車両での重要性は？", a: "特例走行を行うため通常以上の確認義務があり、「だろう運転」防止に不可欠。" },
+            { id: 42, category: "緊急車両", q: "緊急走行時の特有のリスクは？", a: "トンネル視（視野狭窄）や、「周りが避けてくれる」という楽観バイアス。" },
+            { id: 43, category: "緊急車両", q: "無線交信との兼ね合いは？", a: "無線の妨げにならないよう調整し、重要確認事項を優先する手順を決める。" },
+            { id: 44, category: "緊急車両", q: "物流業界での教育は？", a: "「指導監督12項目」と併せ、入社時研修や安全大会で実施。" },
+            { id: 45, category: "緊急車両", q: "最新技術との融合は？", a: "AI音声認識によるチェックや、VRシミュレーターの活用。" },
+            // VII. 経営・マネジメント
+            { id: 46, category: "マネジメント", q: "経営的メリットは？", a: "事故減少による修理費・保険料削減、社会的信用の維持。" },
+            { id: 47, category: "マネジメント", q: "事故削減効果のデータ例は？", a: "事故件数約34%減、事故率約30%減などの事例がある。" },
+            { id: 48, category: "マネジメント", q: "コストダウンの金額例は？", a: "保険料約6,750万円削減、1台あたり約4万円のコスト減事例など。" },
+            { id: 49, category: "マネジメント", q: "運輸安全マネジメントとの関係は？", a: "PDCAサイクルの「実行」や「確認・改善」の具体策として位置づけられる。" },
+            { id: 50, category: "マネジメント", q: "SDGsとの関係は？", a: "交通事故削減による社会全体の安全寄与（CSR活動）として関連する。" },
+        ];
+
+        // --- APP ---
+        
+        // Ranking Logic
+        const getRank = (xp) => {
+            if (xp < 100) return { title: "研修生", color: "text-gray-400", icon: <Icons.Brain className="w-6 h-6" /> };
+            if (xp < 300) return { title: "新人隊員", color: "text-green-400", icon: <Icons.Shield className="w-6 h-6" /> };
+            if (xp < 600) return { title: "機関員", color: "text-blue-400", icon: <Icons.Activity className="w-6 h-6" /> };
+            if (xp < 1000) return { title: "隊長", color: "text-yellow-400", icon: <Icons.Siren className="w-6 h-6" /> };
+            return { title: "伝説の指導員", color: "text-red-500", icon: <Icons.Award className="w-6 h-6" /> };
+        };
+
+        function App() {
+            const [gameState, setGameState] = useState('menu'); // menu, playing, result, database
+            const [currentQuestions, setCurrentQuestions] = useState([]);
+            const [currentIndex, setCurrentIndex] = useState(0);
+            const [isFlipped, setIsFlipped] = useState(false);
+            
+            // Persistent State with LocalStorage
+            const [xp, setXp] = useState(() => {
+                try {
+                    const saved = localStorage.getItem('cdts_xp');
+                    return saved ? parseInt(saved, 10) : 0;
+                } catch(e) {
+                    console.error("LocalStorage access failed", e);
+                    return 0;
+                }
+            });
+
+            const [streak, setStreak] = useState(0);
+            const [sessionStats, setSessionStats] = useState({ correct: 0, total: 0 });
+            const [selectedCategory, setSelectedCategory] = useState('All');
+            const [sirenActive, setSirenActive] = useState(false);
+            
+            // For Report
+            const [reportText, setReportText] = useState('');
+            const [showReport, setShowReport] = useState(false);
+            const [copySuccess, setCopySuccess] = useState(false);
+            
+            // For Reset Confirm Modal
+            const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+            useEffect(() => {
+                try {
+                    localStorage.setItem('cdts_xp', xp);
+                } catch(e) {
+                    console.error("LocalStorage save failed", e);
+                }
+            }, [xp]);
+
+            useEffect(() => {
+                if (streak >= 3) {
+                    setSirenActive(true);
+                } else {
+                    setSirenActive(false);
+                }
+            }, [streak]);
+
+            const categories = ['All', ...new Set(faqData.map(item => item.category))];
+
+            const startGame = (mode) => {
+                let questionsPool = [];
+                if (mode === 'quick') {
+                    questionsPool = [...faqData].sort(() => 0.5 - Math.random()).slice(0, 10);
+                } else if (mode === 'category') {
+                    if (selectedCategory === 'All') {
+                        questionsPool = [...faqData].sort(() => 0.5 - Math.random());
+                    } else {
+                        questionsPool = faqData.filter(q => q.category === selectedCategory).sort(() => 0.5 - Math.random());
+                    }
+                } else {
+                    questionsPool = [...faqData];
+                }
+                
+                setCurrentQuestions(questionsPool);
+                setCurrentIndex(0);
+                setIsFlipped(false);
+                setSessionStats({ correct: 0, total: questionsPool.length });
+                setGameState('playing');
+                setStreak(0);
+                setShowReport(false);
+            };
+
+            const handleAnswer = (isCorrect) => {
+                const points = isCorrect ? 10 + (streak * 2) : 0;
+                setXp(prev => prev + points);
+                setSessionStats(prev => ({ ...prev, correct: prev.correct + (isCorrect ? 1 : 0) }));
+                
+                if (isCorrect) {
+                    setStreak(prev => prev + 1);
+                } else {
+                    setStreak(0);
+                }
+
+                setTimeout(() => {
+                    if (currentIndex < currentQuestions.length - 1) {
+                        setCurrentIndex(prev => prev + 1);
+                        setIsFlipped(false);
+                    } else {
+                        setGameState('result');
+                    }
+                }, 400);
+            };
+            
+            // Reset Data Functions - Updated to use Modal instead of window.confirm
+            const confirmReset = () => {
+                setShowResetConfirm(true);
+            };
+            
+            const executeReset = () => {
+                setXp(0);
+                try {
+                    localStorage.removeItem('cdts_xp');
+                } catch(e) {
+                    console.error("LocalStorage clear failed", e);
+                }
+                setShowResetConfirm(false);
+            };
+
+            // Generate Report Function
+            const generateReport = () => {
+                const date = new Date().toLocaleString('ja-JP');
+                const rank = getRank(xp);
+                const score = Math.round((sessionStats.correct / sessionStats.total) * 100);
+                const resultText = score >= 80 ? "合格" : "再訓練推奨";
+                
+                const report = `【緊急車両運転研修 実施報告書】
+--------------------------------
+■ 実施日時: ${date}
+■ 隊員氏名: __________________
+■ 現在階級: ${rank.title} (EXP: ${xp})
+
+【実施結果】
+■ 実施内容: ${currentQuestions.length}問 集中トレーニング
+■ 正答率　: ${score}% (${sessionStats.correct}問正解 / ${sessionStats.total}問中)
+■ 判定　　: ${resultText}
+
+【特記事項】
+コメンタリー運転に関する知識確認を実施。
+${score < 100 ? "一部回答に迷いが見られたため、継続的な学習が必要。" : "全問正解により、高い安全意識が確認された。"}
+
+--------------------------------
+署名: 
+`;
+                setReportText(report);
+                setShowReport(true);
+                setCopySuccess(false);
+            };
+            
+            const copyToClipboard = () => {
+                navigator.clipboard.writeText(reportText).then(() => {
+                    setCopySuccess(true);
+                    setTimeout(() => setCopySuccess(false), 2000);
+                });
+            };
+
+            const currentRank = getRank(xp);
+
+            return (
+                <div className={`min-h-screen bg-slate-900 text-white font-sans overflow-hidden selection:bg-red-500 selection:text-white ${sirenActive ? 'animate-pulse-subtle' : ''}`}>
+                    
+                    {/* Background Grid Effect */}
+                    <div className="fixed inset-0 z-0 opacity-10 pointer-events-none" 
+                         style={{ backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)', backgroundSize: '40px 40px' }}>
+                    </div>
+
+                    {/* Header / Dashboard */}
+                    <header className="relative z-10 bg-slate-800 border-b border-slate-700 p-4 shadow-lg">
+                        <div className="max-w-4xl mx-auto flex justify-between items-center">
+                            <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setGameState('menu')}>
+                                <div className={`p-2 rounded-lg ${sirenActive ? 'bg-red-600 animate-pulse' : 'bg-blue-600'}`}>
+                                    <Icons.Siren className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                    <h1 className="font-bold text-lg tracking-wider text-slate-100">C.D.T.S</h1>
+                                    <p className="text-xs text-slate-400">Commentary Driving Training System</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-6">
+                                <div className="text-right hidden sm:block">
+                                    <div className="text-xs text-slate-400">OPERATOR RANK</div>
+                                    <div className={`font-bold flex items-center justify-end gap-2 ${currentRank.color}`}>
+                                        {currentRank.title} {currentRank.icon}
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-xs text-slate-400">EXP</div>
+                                    <div className="font-mono text-xl font-bold text-blue-400">{xp}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Content Area */}
+                    <main className="relative z-10 max-w-4xl mx-auto p-4 min-h-[80vh] flex flex-col justify-center">
+                        
+                        {/* --- MENU SCREEN --- */}
+                        {gameState === 'menu' && (
+                            <div className="space-y-8 animate-fade-in flex flex-col h-full justify-center">
+                                <div className="text-center space-y-4 py-8">
+                                    <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                                        緊急車両 運転技能研修
+                                    </h2>
+                                    <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+                                        コメンタリー運転の知識を習得し、事故ゼロのプロフェッショナルを目指せ。<br/>
+                                        状況を言語化し、危険を予測せよ。
+                                    </p>
+                                </div>
+
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {/* Game Modes */}
+                                    <div className="space-y-4">
+                                        <button onClick={() => startGame('quick')} 
+                                            className="w-full group relative overflow-hidden bg-slate-800 hover:bg-slate-700 border border-slate-600 p-6 rounded-xl transition-all duration-300 hover:border-blue-500 hover:shadow-blue-500/20 text-left">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <h3 className="text-xl font-bold text-blue-400 group-hover:text-blue-300">緊急出動 (Quick 10)</h3>
+                                                    <p className="text-sm text-slate-400 mt-1">ランダムに10問出題。短時間トレーニング。</p>
+                                                </div>
+                                                <Icons.Zap className="w-8 h-8 text-slate-600 group-hover:text-yellow-400 transition-colors" />
+                                            </div>
+                                        </button>
+
+                                        <div className="bg-slate-800 border border-slate-600 p-6 rounded-xl">
+                                            <h3 className="text-xl font-bold text-green-400 mb-4 flex items-center gap-2">
+                                                <Icons.BookOpen className="w-5 h-5" /> カテゴリ別研修
+                                            </h3>
+                                            <div className="space-y-3">
+                                                <select 
+                                                    value={selectedCategory} 
+                                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                                    className="w-full bg-slate-900 border border-slate-600 text-white rounded p-2 focus:outline-none focus:border-blue-500"
+                                                >
+                                                    {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                                </select>
+                                                <button onClick={() => startGame('category')} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded transition-colors flex items-center justify-center gap-2">
+                                                    <Icons.Play className="w-4 h-4" /> 開始
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Stats / Database Link */}
+                                    <div className="space-y-4">
+                                        <button onClick={() => setGameState('database')} 
+                                            className="w-full h-full group bg-slate-800 hover:bg-slate-700 border border-slate-600 p-6 rounded-xl transition-all text-left flex flex-col justify-between">
+                                            <div>
+                                                <h3 className="text-xl font-bold text-purple-400 group-hover:text-purple-300">データベース (FAQ一覧)</h3>
+                                                <p className="text-sm text-slate-400 mt-1">全50問の知識を確認・復習する。</p>
+                                            </div>
+                                            <div className="mt-4 flex justify-end">
+                                                <Icons.Menu className="w-12 h-12 text-slate-700 group-hover:text-purple-500/50 transition-colors" />
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div className="mt-8 text-center border-t border-slate-800 pt-8">
+                                    <button 
+                                        onClick={confirmReset}
+                                        className="text-slate-600 hover:text-red-400 text-xs flex items-center justify-center gap-2 mx-auto transition-colors"
+                                    >
+                                        <Icons.Trash2 className="w-3 h-3" /> データリセット
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* --- GAME SCREEN (FLASHCARD) --- */}
+                        {gameState === 'playing' && currentQuestions.length > 0 && (
+                            <div className="max-w-2xl mx-auto w-full animate-slide-up">
+                                
+                                <div className="flex justify-between items-end mb-4 text-sm font-mono">
+                                    <div className="text-slate-400">
+                                        MISSION PROGRESS: <span className="text-white text-lg">{currentIndex + 1}</span> / {currentQuestions.length}
+                                    </div>
+                                    <div className={`flex items-center gap-2 ${sirenActive ? 'text-red-400 font-bold' : 'text-slate-400'}`}>
+                                        {sirenActive && <Icons.Siren className="w-4 h-4 animate-ping" />}
+                                        COMBO: {streak}
+                                    </div>
+                                </div>
+
+                                <div className="w-full bg-slate-800 h-2 rounded-full mb-6 overflow-hidden">
+                                    <div 
+                                        className="bg-blue-500 h-full transition-all duration-300 ease-out"
+                                        style={{ width: `${((currentIndex) / currentQuestions.length) * 100}%` }}
+                                    ></div>
+                                </div>
+
+                                <div className="relative perspective-1000 min-h-[400px]">
+                                    {/* Question Side */}
+                                    <div className={`absolute inset-0 backface-hidden transition-all duration-500 transform ${isFlipped ? 'rotate-y-180 opacity-0 pointer-events-none' : 'rotate-y-0 opacity-100'} bg-slate-800 border-2 border-slate-600 rounded-2xl p-8 flex flex-col justify-between shadow-2xl`}>
+                                        <div>
+                                            <div className="inline-block bg-blue-900/50 text-blue-300 text-xs px-2 py-1 rounded mb-4 border border-blue-500/30">
+                                                CATEGORY: {currentQuestions[currentIndex].category}
+                                            </div>
+                                            <h3 className="text-2xl font-bold leading-relaxed text-slate-100">
+                                                Q. {currentQuestions[currentIndex].q}
+                                            </h3>
+                                        </div>
+                                        
+                                        <div className="mt-8 text-center">
+                                            <p className="text-slate-500 text-sm mb-4">考えがまとまったら確認してください</p>
+                                            <button 
+                                                onClick={() => setIsFlipped(true)}
+                                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/50 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                            >
+                                                回答を確認する <Icons.ChevronRight className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Answer Side */}
+                                    <div className={`absolute inset-0 backface-hidden transition-all duration-500 transform ${isFlipped ? 'rotate-y-0 opacity-100' : '-rotate-y-180 opacity-0 pointer-events-none'} bg-slate-800 border-2 border-blue-500 rounded-2xl p-8 flex flex-col justify-between shadow-2xl shadow-blue-900/20`}>
+                                        <div className="overflow-y-auto pr-2 custom-scrollbar">
+                                            <div className="text-xs text-slate-400 mb-2">ANSWER</div>
+                                            <p className="text-xl leading-relaxed text-white font-medium">
+                                                {currentQuestions[currentIndex].a}
+                                            </p>
+                                            <div className="mt-6 p-4 bg-slate-900/50 rounded-lg border border-slate-700 text-sm text-slate-400">
+                                                <div className="flex items-center gap-2 mb-2 text-blue-400 font-bold">
+                                                    <Icons.Volume2 className="w-4 h-4" /> 
+                                                    コメンタリーポイント
+                                                </div>
+                                                実際の運転中は、この回答の要点を短く言語化しましょう。
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-6 grid grid-cols-2 gap-4">
+                                            <button 
+                                                onClick={() => handleAnswer(false)}
+                                                className="bg-slate-700 hover:bg-red-900/50 hover:border-red-500 border border-transparent text-slate-300 hover:text-white py-3 rounded-xl transition-all flex flex-col items-center justify-center gap-1 group"
+                                            >
+                                                <Icons.XCircle className="w-6 h-6 group-hover:text-red-500" />
+                                                <span className="text-xs">要復習</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => handleAnswer(true)}
+                                                className="bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl shadow-lg shadow-blue-900/50 transition-all flex flex-col items-center justify-center gap-1"
+                                            >
+                                                <Icons.CheckCircle className="w-6 h-6" />
+                                                <span className="text-xs">正解・理解した</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* --- RESULT SCREEN --- */}
+                        {gameState === 'result' && (
+                            <div className="text-center animate-scale-in max-w-lg mx-auto bg-slate-800 p-8 rounded-2xl border border-slate-600 shadow-2xl">
+                                <div className="mb-6 inline-flex p-4 rounded-full bg-slate-700 border-4 border-slate-600">
+                                    {sessionStats.correct / sessionStats.total > 0.8 ? (
+                                        <Icons.Award className="w-16 h-16 text-yellow-400" />
+                                    ) : (
+                                        <Icons.Activity className="w-16 h-16 text-blue-400" />
+                                    )}
+                                </div>
+                                
+                                <h2 className="text-3xl font-bold text-white mb-2">MISSION COMPLETE</h2>
+                                <p className="text-slate-400 mb-8">帰投しました。お疲れ様でした。</p>
+
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="bg-slate-900 p-4 rounded-lg">
+                                        <div className="text-xs text-slate-500">正解率</div>
+                                        <div className="text-2xl font-bold text-white">
+                                            {Math.round((sessionStats.correct / sessionStats.total) * 100)}%
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-900 p-4 rounded-lg">
+                                        <div className="text-xs text-slate-500">獲得EXP</div>
+                                        <div className="text-2xl font-bold text-blue-400">
+                                            +{xp - (getRank(xp - (sessionStats.correct * 10)).xp || xp - (sessionStats.correct * 10)) > 0 ? "..." : ""} 
+                                            <span className="text-sm ml-1">Total: {xp}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Report Button */}
+                                <div className="mb-6">
+                                    <button
+                                        onClick={generateReport}
+                                        className="w-full bg-slate-700 hover:bg-slate-600 border border-slate-500 text-slate-200 font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
+                                    >
+                                        <Icons.ClipboardCheck className="w-4 h-4" /> 業務報告書作成
+                                    </button>
+                                </div>
+
+                                <button 
+                                    onClick={() => setGameState('menu')}
+                                    className="w-full bg-white text-slate-900 hover:bg-slate-200 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <Icons.RotateCcw className="w-5 h-5" /> メニューに戻る
+                                </button>
+                            </div>
+                        )}
+
+                        {/* --- REPORT MODAL --- */}
+                        {showReport && (
+                            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in">
+                                <div className="bg-slate-800 rounded-xl max-w-lg w-full p-6 border border-slate-600 shadow-2xl relative">
+                                    <button 
+                                        onClick={() => setShowReport(false)}
+                                        className="absolute top-4 right-4 text-slate-400 hover:text-white"
+                                    >
+                                        <Icons.XCircle className="w-6 h-6" />
+                                    </button>
+                                    
+                                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                                        <Icons.ClipboardCheck className="w-5 h-5 text-blue-400" /> 実施報告書プレビュー
+                                    </h3>
+                                    
+                                    <textarea 
+                                        readOnly
+                                        className="w-full h-64 bg-slate-900 text-slate-300 font-mono text-sm p-4 rounded border border-slate-700 focus:outline-none mb-4 resize-none"
+                                        value={reportText}
+                                    />
+                                    
+                                    <button 
+                                        onClick={copyToClipboard}
+                                        className={`w-full py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${copySuccess ? 'bg-green-600 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
+                                    >
+                                        {copySuccess ? (
+                                            <>
+                                                <Icons.CheckCircle className="w-5 h-5" /> コピー完了
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Icons.Copy className="w-5 h-5" /> クリップボードにコピー
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* --- RESET CONFIRM MODAL --- */}
+                        {showResetConfirm && (
+                            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in">
+                                <div className="bg-slate-800 rounded-xl max-w-sm w-full p-6 border border-red-500/50 shadow-2xl relative text-center">
+                                    <div className="mb-4 flex justify-center">
+                                        <div className="p-3 bg-red-900/30 rounded-full text-red-400">
+                                            <Icons.Trash2 className="w-8 h-8" />
+                                        </div>
+                                    </div>
+                                    
+                                    <h3 className="text-xl font-bold text-white mb-2">
+                                        データリセットの確認
+                                    </h3>
+                                    
+                                    <p className="text-slate-400 text-sm mb-6">
+                                        これまでの訓練データ（経験値・階級）を全て消去しますか？<br/>
+                                        <span className="text-red-400">この操作は取り消せません。</span>
+                                    </p>
+                                    
+                                    <div className="flex gap-3">
+                                        <button 
+                                            onClick={() => setShowResetConfirm(false)}
+                                            className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg transition-colors font-bold text-sm"
+                                        >
+                                            キャンセル
+                                        </button>
+                                        <button 
+                                            onClick={executeReset}
+                                            className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg transition-colors font-bold text-sm"
+                                        >
+                                            リセットする
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* --- DATABASE SCREEN --- */}
+                        {gameState === 'database' && (
+                            <div className="animate-fade-in h-[75vh] flex flex-col">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                                        <Icons.BookOpen className="text-blue-400 w-6 h-6" /> マニュアルデータベース
+                                    </h2>
+                                    <button 
+                                        onClick={() => setGameState('menu')}
+                                        className="text-sm bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg transition-colors"
+                                    >
+                                        閉じる
+                                    </button>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
+                                    {faqData.map((item) => (
+                                        <div key={item.id} className="bg-slate-800 border border-slate-700 p-4 rounded-lg hover:border-blue-500/50 transition-colors">
+                                            <div className="flex items-start gap-3">
+                                                <span className="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded mt-1 shrink-0">
+                                                    Q{item.id}
+                                                </span>
+                                                <div>
+                                                    <h4 className="font-bold text-slate-200 mb-2">{item.q}</h4>
+                                                    <p className="text-slate-400 text-sm leading-relaxed border-l-2 border-blue-500 pl-3">
+                                                        {item.a}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                    </main>
+
+                    {/* Footer Decor */}
+                    <footer className="fixed bottom-0 w-full p-2 text-center text-xs text-slate-600 z-0 pointer-events-none">
+                        EMERGENCY VEHICLE OPERATION SYSTEM v2.0
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
